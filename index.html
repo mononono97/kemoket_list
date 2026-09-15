@@ -100,6 +100,28 @@
     color:#fff;
   }
 
+  .help-btn{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.25);
+    background:transparent;
+    color:var(--paper);
+    padding:5px 12px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .help-btn:hover{background:rgba(255,255,255,.12);}
+
+  .help-body p{
+    margin:0 0 12px;
+    line-height:1.7;
+  }
+  .help-body p:last-child{margin-bottom:0;}
+  .help-body a{color:inherit;}
+
   nav.rows{
     max-width:1180px;
     margin:0 auto;
@@ -167,6 +189,25 @@
     font-size:13px;
     color:#5a5646;
   }
+  .notes-toolbar{
+    display:flex;
+    gap:8px;
+    margin-left:auto;
+    flex-wrap:wrap;
+  }
+  .notes-toolbar button{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--card-bg);
+    color:var(--ink);
+    padding:6px 12px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .notes-toolbar button:hover{background:#efece0;}
 
   .grid{
     display:grid;
@@ -537,6 +578,7 @@
       <button type="button" data-lang="en">EN</button>
       <button type="button" data-lang="jp">JP</button>
     </div>
+    <button type="button" class="help-btn" id="helpBtn"></button>
     <div class="search-box">
       <input id="searchInput" type="text" placeholder="サークル名 / 代表者名 / 配置番号 검색">
     </div>
@@ -548,6 +590,11 @@
   <div class="row-heading">
     <div class="big-letter" id="currentLetter">A</div>
     <div class="count" id="currentCount"></div>
+    <div class="notes-toolbar" id="notesToolbar" style="display:none;">
+      <button type="button" id="exportNotesBtn"></button>
+      <button type="button" id="importNotesBtn"></button>
+      <input type="file" id="importNotesInput" accept="application/json" style="display:none;">
+    </div>
   </div>
   <div class="grid" id="grid"></div>
   <div class="map-grid" id="mapGrid" style="display:none;"></div>
@@ -588,6 +635,18 @@ const I18N = {
     searchPlaceholder: "서클명 / 대표자명 / 배치번호 검색",
     footerSource: "데이터 출처",
     footerDesc: "프로필 사진은 avatars/ 폴더에 직접 저장해둔 로컬 이미지 파일(X 핸들명.jpg)을 사용합니다. 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). 부스를 클릭(탭)하면 열리고 닫힙니다.",
+    helpBtn: "❓ 도움말",
+    helpTitle: "도움말",
+    helpBody: [
+      "이 사이트는 케모켓 부스 목록을 쉽게 보기 위해 만든 사이트 입니다.",
+      "자동 번역 및 개발에 AI를 사용하여 내용에 오류가 있을 수 있습니다.",
+      "자세한 내용은 {link} 을 참고해주세요",
+      "모든 내용은 단말에만 저장되며, 단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
+      "메모(📝) 탭에서 지금까지 작성한 메모를 파일로 내보내거나, 내보낸 파일로 메모를 복원(가져오기)할 수 있습니다.",
+      "언어는 한국어, 영어, 일본어가 지원됩니다.",
+      "인터넷 연결이 좋지 않을 시, 작가의 프로필 사진이 보이지 않을 수 있습니다.",
+      "제작 : @Chung_Hwani",
+    ],
     allBtn: "📋 전체",
     notesBtn: "📝 메모",
     notesBtnCount: "📝 메모({n})",
@@ -604,11 +663,17 @@ const I18N = {
     tweetLoadFail: "트윗을 불러오지 못했어요.",
     openProfile: "X 프로필 열기",
     memoLabel: "내 메모 (이 브라우저에만 저장됨)",
-    memoPlaceholder: "예: 2번째로 구매, 다음 케모켓 때 다시 확인",
+    memoPlaceholder: "예시 : 동인지 한권, 아크릴 키링 하나",
     save: "저장",
     delete: "삭제",
     savedStatus: "저장됨",
     deletedStatus: "삭제됨",
+    exportNotesBtn: "⬇️ 메모 내보내기",
+    importNotesBtn: "⬆️ 메모 가져오기",
+    importConfirm: "가져오기를 하면 기존 메모와 병합됩니다. 계속할까요?",
+    importSuccess: "메모 {n}개를 가져왔습니다.",
+    importFail: "메모 파일을 불러오지 못했습니다. 파일 형식을 확인해주세요.",
+    exportEmpty: "내보낼 메모가 없습니다.",
   },
   en: {
     brandMark: "Kemoket Booth List",
@@ -616,6 +681,18 @@ const I18N = {
     searchPlaceholder: "Search by circle name / rep name / booth ID",
     footerSource: "Data source",
     footerDesc: "Profile photos use local image files (X handle.jpg) saved directly in the avatars/ folder. Tweet cards load the official X timeline widget based on each circle's X account (pinned tweet if present, otherwise the latest tweet). Click (tap) a booth to open or close it.",
+    helpBtn: "❓ Help",
+    helpTitle: "Help",
+    helpBody: [
+      "This site was made to make it easy to browse the Kemoket booth list.",
+      "AI was used for automatic translation and development, so there may be errors in the content.",
+      "For more details, please refer to {link}",
+      "All data is stored only on your device — if you clear your browser data, anything you've written may be lost.",
+      "In the Notes (📝) tab, you can export the notes you've written so far to a file, or restore them by importing that file.",
+      "Korean, English, and Japanese are supported.",
+      "If your internet connection is poor, artist profile photos may not display.",
+      "Made by: @Chung_Hwani",
+    ],
     allBtn: "📋 All",
     notesBtn: "📝 Notes",
     notesBtnCount: "📝 Notes({n})",
@@ -632,11 +709,17 @@ const I18N = {
     tweetLoadFail: "Failed to load tweet.",
     openProfile: "Open X Profile",
     memoLabel: "My Notes (saved only in this browser)",
-    memoPlaceholder: "e.g. Buy 2nd copy, check again at next Kemoket",
+    memoPlaceholder: "e.g. one doujinshi, one acrylic keychain",
     save: "Save",
     delete: "Delete",
     savedStatus: "Saved",
     deletedStatus: "Deleted",
+    exportNotesBtn: "⬇️ Export Notes",
+    importNotesBtn: "⬆️ Import Notes",
+    importConfirm: "Importing will merge with your existing notes. Continue?",
+    importSuccess: "Imported {n} notes.",
+    importFail: "Failed to import the notes file. Please check the file format.",
+    exportEmpty: "There are no notes to export.",
   },
   jp: {
     brandMark: "けもケット ブース一覧",
@@ -644,6 +727,18 @@ const I18N = {
     searchPlaceholder: "サークル名 / 代表者名 / 配置番号 検索",
     footerSource: "データ出典",
     footerDesc: "プロフィール写真は avatars/ フォルダに直接保存したローカル画像ファイル（Xハンドル名.jpg）を使用します。ツイートカードは各サークルのXアカウントに基づいてX公式タイムラインウィジェットを読み込んで表示します（固定ツイートがあればそれ、なければ最新ツイートが表示されます）。ブースをクリック（タップ）すると開閉します。",
+    helpBtn: "❓ ヘルプ",
+    helpTitle: "ヘルプ",
+    helpBody: [
+      "このサイトは、けもケットのブース一覧を簡単に見られるように作られたサイトです。",
+      "自動翻訳および開発にAIを使用しているため、内容に誤りがある場合があります。",
+      "詳細は {link} をご参照ください。",
+      "すべての内容は端末にのみ保存され、端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
+      "メモ（📝）タブから、これまで書いたメモをファイルにエクスポートしたり、そのファイルからメモを復元（インポート）したりできます。",
+      "言語は韓国語・英語・日本語に対応しています。",
+      "インターネット接続が不安定な場合、作家のプロフィール写真が表示されないことがあります。",
+      "制作：@Chung_Hwani",
+    ],
     allBtn: "📋 全体",
     notesBtn: "📝 メモ",
     notesBtnCount: "📝 メモ({n})",
@@ -660,11 +755,17 @@ const I18N = {
     tweetLoadFail: "ツイートを読み込めませんでした。",
     openProfile: "Xプロフィールを開く",
     memoLabel: "マイメモ（このブラウザにのみ保存されます）",
-    memoPlaceholder: "例：2回目の購入、次回のけもケットで再確認",
+    memoPlaceholder: "例：同人誌1冊、アクリルキーホルダー1個",
     save: "保存",
     delete: "削除",
     savedStatus: "保存済み",
     deletedStatus: "削除済み",
+    exportNotesBtn: "⬇️ メモをエクスポート",
+    importNotesBtn: "⬆️ メモをインポート",
+    importConfirm: "インポートすると既存のメモと統合されます。続行しますか？",
+    importSuccess: "メモを{n}件インポートしました。",
+    importFail: "メモファイルを読み込めませんでした。ファイル形式をご確認ください。",
+    exportEmpty: "エクスポートするメモがありません。",
   },
 };
 const LANG_KEY = "kemoket-lang";
@@ -685,6 +786,9 @@ function applyStaticTexts(){
   document.getElementById("brandMark").textContent = t("brandMark");
   document.getElementById("brandSub").textContent = t("brandSub");
   document.getElementById("searchInput").placeholder = t("searchPlaceholder");
+  document.getElementById("helpBtn").textContent = t("helpBtn");
+  document.getElementById("exportNotesBtn").textContent = t("exportNotesBtn");
+  document.getElementById("importNotesBtn").textContent = t("importNotesBtn");
   document.getElementById("siteFooter").innerHTML =
     `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a> · ${t("footerDesc")}`;
   document.querySelectorAll("#langSwitch button").forEach(btn => {
@@ -743,6 +847,62 @@ function setNote(boothId, text){
     delete notes[boothId];
   }
   saveNotes();
+}
+
+/* ---------- 메모 내보내기/가져오기 ----------
+   { "A-01": "메모 내용", ... } 형태의 notes 객체를 JSON 파일로 저장/복원함.
+------------------------------------------------- */
+function exportNotes(){
+  const ids = Object.keys(notes);
+  if(!ids.length){
+    alert(t("exportEmpty"));
+    return;
+  }
+  const payload = {
+    app: "kemoket-notes",
+    exportedAt: new Date().toISOString(),
+    notes,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kemoket-notes-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importNotesFromFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const incoming = (parsed && typeof parsed === "object" && parsed.notes && typeof parsed.notes === "object")
+        ? parsed.notes
+        : parsed;
+      if(!incoming || typeof incoming !== "object" || Array.isArray(incoming)){
+        throw new Error("invalid format");
+      }
+      if(!confirm(t("importConfirm"))) return;
+      let count = 0;
+      Object.keys(incoming).forEach(id => {
+        if(typeof incoming[id] === "string" && incoming[id].trim()){
+          notes[id] = incoming[id].trim();
+          count++;
+        }
+      });
+      saveNotes();
+      renderNav();
+      renderGrid();
+      alert(t("importSuccess", { n: count }));
+    } catch {
+      alert(t("importFail"));
+    }
+  };
+  reader.readAsText(file);
 }
 
 function ensureTwitterWidgets(cb){
@@ -927,6 +1087,7 @@ function renderGrid(){
     document.getElementById("currentCount").textContent = currentRow === "MAP1"
       ? `展示室A・B — ${t("mapHint")}`
       : `展示室C・D — ${t("mapHint")}`;
+    document.getElementById("notesToolbar").style.display = "none";
     renderMapView(currentRow);
     return;
   }
@@ -936,6 +1097,7 @@ function renderGrid(){
   const isNotesView = currentRow === "NOTES";
   const isAllView = currentRow === "ALL";
   document.getElementById("currentLetter").textContent = isNotesView ? "📝" : isAllView ? "📋" : currentRow;
+  document.getElementById("notesToolbar").style.display = isNotesView ? "flex" : "none";
 
   let list;
   if(isNotesView){
@@ -1219,6 +1381,46 @@ function openBoothModal(boothId){
 
   backdrop.classList.add("open");
 }
+
+function openHelpModal(){
+  const backdrop = document.getElementById("modalBackdrop");
+  const content = document.getElementById("modalContent");
+  content.innerHTML = "";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "modal-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", closeModal);
+  content.appendChild(closeBtn);
+
+  const title = document.createElement("h2");
+  title.style.margin = "6px 0 14px";
+  title.textContent = t("helpTitle");
+  content.appendChild(title);
+
+  const body = document.createElement("div");
+  body.className = "help-body";
+  const link = `<a href="https://skypalette.jp/kemoket/" target="_blank" rel="noopener">https://skypalette.jp/kemoket/</a>`;
+  const paragraphs = (I18N[currentLang] && I18N[currentLang].helpBody) || I18N.ko.helpBody;
+  body.innerHTML = paragraphs
+    .map(line => `<p>${escapeHtml(line).replace("{link}", link)}</p>`)
+    .join("");
+  content.appendChild(body);
+
+  backdrop.classList.add("open");
+}
+
+document.getElementById("helpBtn").addEventListener("click", openHelpModal);
+
+document.getElementById("exportNotesBtn").addEventListener("click", exportNotes);
+document.getElementById("importNotesBtn").addEventListener("click", () => {
+  document.getElementById("importNotesInput").click();
+});
+document.getElementById("importNotesInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if(file) importNotesFromFile(file);
+  e.target.value = "";
+});
 
 function closeModal(){
   document.getElementById("modalBackdrop").classList.remove("open");
