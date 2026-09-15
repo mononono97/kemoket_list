@@ -106,6 +106,18 @@
   nav.rows button.empty{
     opacity:.35;
   }
+  nav.rows button.memo-tab-btn{
+    width:auto;
+    padding:0 12px;
+    margin-left:8px;
+    font-size:13px;
+    font-weight:600;
+    border-color:rgba(255,255,255,.35);
+  }
+  nav.rows button.memo-tab-btn.active{
+    background:#c9973b;
+    border-color:#c9973b;
+  }
 
   main{
     max-width:1180px;
@@ -209,6 +221,74 @@
   }
   .booth.no-tw .no-tw-badge{display:block;}
 
+  /* 메모가 달린 부스 표시 */
+  .booth.has-note{
+    border-color:#c9973b;
+    box-shadow:0 0 0 1px #c9973b inset;
+    background:#fbf3e2;
+  }
+  .memo-flag{
+    position:absolute;
+    top:6px;
+    left:6px;
+    font-size:12px;
+    line-height:1;
+    display:none;
+  }
+  .booth.has-note .memo-flag{display:block;}
+
+  /* 팝오버 안의 메모 입력 영역 */
+  .memo-box{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid rgba(255,255,255,.18);
+  }
+  .memo-box label{
+    display:block;
+    font-size:11px;
+    color:var(--moss-light);
+    margin-bottom:4px;
+  }
+  .memo-box textarea{
+    width:100%;
+    min-height:52px;
+    resize:vertical;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:6px;
+    color:var(--paper);
+    font-size:12px;
+    font-family:inherit;
+    padding:6px 8px;
+    box-sizing:border-box;
+  }
+  .memo-box .memo-actions{
+    display:flex;
+    gap:6px;
+    margin-top:6px;
+  }
+  .memo-box button{
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:5px;
+    border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.08);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  .memo-box button.save{
+    background:#c9973b;
+    border-color:#c9973b;
+    color:#241b06;
+    font-weight:600;
+  }
+  .memo-box .memo-status{
+    font-size:10.5px;
+    color:var(--moss-light);
+    margin-left:auto;
+    align-self:center;
+  }
+
   /* hover / focus popover */
   .popover{
     display:none;
@@ -288,6 +368,123 @@
     font-size:14px;
   }
 
+  /* 배치도(스키매틱 맵) */
+  .map-grid{
+    display:flex;
+    gap:16px;
+    overflow-x:auto;
+    padding-bottom:16px;
+  }
+  .map-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    flex:0 0 auto;
+  }
+  .map-col .map-col-label{
+    font-weight:800;
+    font-size:13px;
+    color:var(--clay);
+    margin-bottom:6px;
+    position:sticky;
+    top:0;
+  }
+  .map-col .map-cells{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .map-cells-pair{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .map-pair-row{
+    display:flex;
+    gap:2px;
+  }
+  .map-aisle-gap{
+    height:7px;
+  }
+  .map-cell{
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:8.5px;
+    font-family:"SFMono-Regular",Consolas,monospace;
+    background:var(--card-bg);
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:#8a8368;
+    cursor:pointer;
+    user-select:none;
+  }
+  .map-cell.blank{
+    border-color:transparent;
+    background:transparent;
+    cursor:default;
+  }
+  .map-cell:hover{ border-color:var(--moss); }
+  .map-cell.has-note{
+    background:#c9973b;
+    border-color:#c9973b;
+    color:#241b06;
+    font-weight:700;
+  }
+  .map-legend{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    font-size:12px;
+    color:#5a5646;
+    margin-bottom:14px;
+  }
+  .map-legend .swatch{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    border-radius:3px;
+    vertical-align:-1px;
+    margin-right:5px;
+  }
+  .map-legend .swatch.normal{ background:var(--card-bg); border:1px solid var(--line); }
+  .map-legend .swatch.note{ background:#c9973b; }
+
+  /* 모달 */
+  .modal-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,20,16,.55);
+    z-index:500;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--panel);
+    color:var(--paper);
+    border-radius:12px;
+    padding:18px;
+    width:340px;
+    max-width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    box-shadow:0 20px 50px rgba(0,0,0,.4);
+  }
+  .modal .modal-close{
+    float:right;
+    background:none;
+    border:none;
+    color:var(--paper);
+    font-size:18px;
+    cursor:pointer;
+    line-height:1;
+  }
+
   footer{
     max-width:1180px;
     margin:0 auto;
@@ -324,12 +521,17 @@
     <div class="count" id="currentCount"></div>
   </div>
   <div class="grid" id="grid"></div>
+  <div class="map-grid" id="mapGrid" style="display:none;"></div>
   <div class="empty-state" id="emptyState" style="display:none;">검색 결과가 없어요.</div>
 </main>
 
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalContent"></div>
+</div>
+
 <footer>
   데이터 출처: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a> ·
-  프로필 사진은 unavatar.io를 통해 표시되며, 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). PC에서는 호버, 모바일에서는 탭으로 동작합니다.
+  프로필 사진은 avatars/ 폴더에 직접 저장해둔 로컬 이미지 파일(X 핸들명.jpg)을 사용합니다. 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). PC에서는 호버, 모바일에서는 탭으로 동작합니다.
 </footer>
 
 <script>
@@ -351,6 +553,44 @@ let currentRow = ALL_ROWS.find(r => byRow[r].length > 0) || "A";
 let currentQuery = "";
 let widgetsLoaded = false;
 
+/* ---------- 부스별 메모 ----------
+   브라우저(localStorage)에만 저장되는 개인 메모. 서버로 전송되지 않고,
+   이 브라우저에서만 보임. { "A-01": "메모 내용", ... } 형태로 저장.
+------------------------------------ */
+const NOTES_KEY = "kemoket-notes";
+
+function loadNotes(){
+  try {
+    return JSON.parse(localStorage.getItem(NOTES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveNotes(){
+  try {
+    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+  } catch {
+    // 저장 실패(용량 초과 등)해도 사이트 동작에는 지장 없도록 무시
+  }
+}
+
+let notes = loadNotes();
+
+function getNote(boothId){
+  return (notes[boothId] || "").trim();
+}
+
+function setNote(boothId, text){
+  const trimmed = text.trim();
+  if(trimmed){
+    notes[boothId] = trimmed;
+  } else {
+    delete notes[boothId];
+  }
+  saveNotes();
+}
+
 function ensureTwitterWidgets(cb){
   if(window.twttr && window.twttr.widgets){ cb(); return; }
   if(widgetsLoaded){ setTimeout(()=>cb(), 300); return; }
@@ -362,11 +602,11 @@ function ensureTwitterWidgets(cb){
   document.body.appendChild(s);
 }
 
-function avatarUrl(handle){
-  // fallback=false 를 빼서, unavatar가 처리 실패 시(예: 일일 요청 한도 초과) 깨진 이미지 대신
-  // 자체 제공하는 기본 아바타를 내려주도록 함. 그래도 완전히 실패하면 아래 onerror가
-  // 서클명 첫 글자 placeholder로 한 번 더 대체함.
-  return `https://unavatar.io/twitter/${handle}`;
+function localAvatarUrl(handle){
+  // 직접 크롤링/API로 저장해둔 프로필 사진 경로.
+  // avatars/ 폴더에 X 핸들명.jpg 로 저장해두면 이 경로로 그대로 표시됨.
+  // 파일이 없으면 img.onerror에서 서클명 첫 글자 placeholder로 대체됨.
+  return `avatars/${handle}.jpg`;
 }
 
 function renderNav(){
@@ -380,6 +620,28 @@ function renderNav(){
     btn.addEventListener("click", () => { currentRow = r; renderNav(); renderGrid(); });
     nav.appendChild(btn);
   });
+
+  const noteCount = Object.keys(notes).length;
+  const noteBtn = document.createElement("button");
+  noteBtn.className = "memo-tab-btn";
+  noteBtn.textContent = noteCount ? `📝 메모(${noteCount})` : "📝 메모";
+  if(currentRow === "NOTES") noteBtn.classList.add("active");
+  noteBtn.addEventListener("click", () => { currentRow = "NOTES"; renderNav(); renderGrid(); });
+  nav.appendChild(noteBtn);
+
+  const mapBtn1 = document.createElement("button");
+  mapBtn1.className = "memo-tab-btn";
+  mapBtn1.textContent = "🗺️ 배치도1";
+  if(currentRow === "MAP1") mapBtn1.classList.add("active");
+  mapBtn1.addEventListener("click", () => { currentRow = "MAP1"; renderNav(); renderGrid(); });
+  nav.appendChild(mapBtn1);
+
+  const mapBtn2 = document.createElement("button");
+  mapBtn2.className = "memo-tab-btn";
+  mapBtn2.textContent = "🗺️ 배치도2";
+  if(currentRow === "MAP2") mapBtn2.classList.add("active");
+  mapBtn2.addEventListener("click", () => { currentRow = "MAP2"; renderNav(); renderGrid(); });
+  nav.appendChild(mapBtn2);
 }
 
 function makePopover(booth){
@@ -389,8 +651,12 @@ function makePopover(booth){
   const head = document.createElement("div");
   head.className = "pop-head";
   const img = document.createElement("img");
-  img.src = booth.twitter ? avatarUrl(booth.twitter) : "";
-  img.onerror = () => { img.style.visibility = "hidden"; };
+  if(booth.twitter){
+    img.src = localAvatarUrl(booth.twitter);
+    img.onerror = () => { img.style.visibility = "hidden"; };
+  } else {
+    img.style.visibility = "hidden";
+  }
   const names = document.createElement("div");
   names.className = "names";
   names.innerHTML = `<div class="c-name">${escapeHtml(booth.name)}</div><div class="r-name">${escapeHtml(booth.rep)} ・ ${booth.id}</div>`;
@@ -415,7 +681,52 @@ function makePopover(booth){
   }
   pop.appendChild(links);
 
+  const memoBox = document.createElement("div");
+  memoBox.className = "memo-box";
+  memoBox.innerHTML = `
+    <label>내 메모 (이 브라우저에만 저장됨)</label>
+    <textarea placeholder="예: 2번째로 구매, 다음 케모켓 때 다시 확인">${escapeHtml(getNote(booth.id))}</textarea>
+    <div class="memo-actions">
+      <button type="button" class="save">저장</button>
+      <button type="button" class="delete">삭제</button>
+      <span class="memo-status"></span>
+    </div>
+  `;
+  const textarea = memoBox.querySelector("textarea");
+  const saveBtn = memoBox.querySelector(".save");
+  const deleteBtn = memoBox.querySelector(".delete");
+  const status = memoBox.querySelector(".memo-status");
+
+  // 팝오버 안 요소 클릭/포커스가 카드 밖 클릭으로 오인되어 닫히지 않도록 막음
+  memoBox.addEventListener("click", (e) => e.stopPropagation());
+
+  saveBtn.addEventListener("click", () => {
+    setNote(booth.id, textarea.value);
+    updateNoteVisuals(booth.id);
+    status.textContent = "저장됨";
+    setTimeout(() => { status.textContent = ""; }, 1500);
+    if(currentRow === "NOTES") renderGrid();
+    renderNav();
+  });
+  deleteBtn.addEventListener("click", () => {
+    textarea.value = "";
+    setNote(booth.id, "");
+    updateNoteVisuals(booth.id);
+    status.textContent = "삭제됨";
+    setTimeout(() => { status.textContent = ""; }, 1500);
+    if(currentRow === "NOTES") renderGrid();
+    renderNav();
+  });
+
+  pop.appendChild(memoBox);
+
   return { pop, slot };
+}
+
+function updateNoteVisuals(boothId){
+  document.querySelectorAll(`.booth[data-booth-id="${boothId}"]`).forEach(card => {
+    card.classList.toggle("has-note", !!getNote(boothId));
+  });
 }
 
 function loadTimelineInto(slot, handle){
@@ -440,11 +751,37 @@ function escapeHtml(s){
 }
 
 function renderGrid(){
-  document.getElementById("currentLetter").textContent = currentRow;
   const grid = document.getElementById("grid");
+  const mapGrid = document.getElementById("mapGrid");
+  const emptyState = document.getElementById("emptyState");
+
+  const isMapView = currentRow === "MAP1" || currentRow === "MAP2";
+  grid.style.display = isMapView ? "none" : "";
+  mapGrid.style.display = isMapView ? "flex" : "none";
+  emptyState.style.display = "none";
+
+  if(isMapView){
+    document.getElementById("currentLetter").textContent = "🗺️";
+    document.getElementById("currentCount").textContent = currentRow === "MAP1"
+      ? "展示室A・B — 부스를 눌러서 메모/작가 정보를 확인하세요"
+      : "展示室C・D — 부스를 눌러서 메모/작가 정보를 확인하세요";
+    renderMapView(currentRow);
+    return;
+  }
+
   grid.innerHTML = "";
 
-  let list = byRow[currentRow] || [];
+  const isNotesView = currentRow === "NOTES";
+  document.getElementById("currentLetter").textContent = isNotesView ? "📝" : currentRow;
+
+  let list;
+  if(isNotesView){
+    const noteIds = new Set(Object.keys(notes));
+    list = BOOTHS.filter(b => noteIds.has(b.id));
+  } else {
+    list = byRow[currentRow] || [];
+  }
+
   if(currentQuery){
     const q = currentQuery.toLowerCase();
     list = list.filter(b =>
@@ -455,12 +792,23 @@ function renderGrid(){
     );
   }
 
-  document.getElementById("currentCount").textContent = `${list.length}サークル`;
+  document.getElementById("currentCount").textContent = isNotesView
+    ? `메모 남긴 서클 ${list.length}개`
+    : `${list.length}サークル`;
   document.getElementById("emptyState").style.display = list.length ? "none" : "block";
+  document.getElementById("emptyState").textContent = isNotesView
+    ? "아직 메모를 남긴 부스가 없어요. 부스를 열어서 메모를 추가해보세요."
+    : "검색 결과가 없어요.";
 
   list.forEach(booth => {
     const card = document.createElement("div");
-    card.className = "booth" + (booth.twitter ? "" : " no-tw");
+    card.className = "booth" + (booth.twitter ? "" : " no-tw") + (getNote(booth.id) ? " has-note" : "");
+    card.dataset.boothId = booth.id;
+
+    const memoFlag = document.createElement("div");
+    memoFlag.className = "memo-flag";
+    memoFlag.textContent = "📝";
+    card.appendChild(memoFlag);
 
     const badge = document.createElement("div");
     badge.className = "no-tw-badge";
@@ -476,9 +824,10 @@ function renderGrid(){
     if(booth.twitter){
       const img = document.createElement("img");
       img.loading = "lazy";
-      img.src = avatarUrl(booth.twitter);
+      img.src = localAvatarUrl(booth.twitter);
       img.alt = booth.name;
       img.onerror = () => {
+        // 로컬에 저장된 이미지 파일이 없으면 서클명 첫 글자로 대체
         avatarWrap.innerHTML = "";
         const fb = document.createElement("div");
         fb.className = "fallback";
@@ -508,7 +857,10 @@ function renderGrid(){
     card.appendChild(pop);
 
     let timelineLoaded = false;
+    let closeTimer = null;
+    const cancelClose = () => { if(closeTimer){ clearTimeout(closeTimer); closeTimer = null; } };
     const open = () => {
+      cancelClose();
       card.classList.add("show-pop");
       if(booth.twitter && !timelineLoaded){
         timelineLoaded = true;
@@ -516,11 +868,19 @@ function renderGrid(){
       }
     };
     const close = () => card.classList.remove("show-pop");
+    // 마우스가 카드에서 팝오버로 이동하는 짧은 공백 구간에서 바로 닫히지 않도록
+    // 약간의 유예 시간을 두고, 그 사이 다시 카드나 팝오버로 들어오면 닫기를 취소함.
+    const scheduleClose = () => {
+      cancelClose();
+      closeTimer = setTimeout(close, 400);
+    };
 
     if(supportsHover){
-      // PC(마우스 있는 환경): 호버로 열고 닫기
+      // PC(마우스 있는 환경): 호버로 열고 닫기 (팝오버 위에서도 유지)
       card.addEventListener("mouseenter", open);
-      card.addEventListener("mouseleave", close);
+      card.addEventListener("mouseleave", scheduleClose);
+      pop.addEventListener("mouseenter", cancelClose);
+      pop.addEventListener("mouseleave", scheduleClose);
     } else {
       // 모바일/터치 환경: 탭으로 토글
       card.addEventListener("click", (e) => {
@@ -540,6 +900,187 @@ document.addEventListener("click", () => {
 document.getElementById("searchInput").addEventListener("input", (e) => {
   currentQuery = e.target.value.trim();
   renderGrid();
+});
+
+/* ---------- 배치도(스키매틱 맵) ----------
+   실제 회장 전체도(첨부 이미지) 두 장을 기준으로 페이지를 나눔:
+   - 배치도1 = 展示室A・B (C,B,S,R,Q,P,O,N,M열)
+   - 배치도2 = 展示室C・D (L,K,J,I,H,G,F,E,D,A열)
+   각 열은 사진처럼 "왼쪽은 큰 번호부터 내려오고 오른쪽은 1번부터 올라오는"
+   두 줄 마주보기 구조 + 4개마다 통로 틈으로 표현함(정확한 픽셀 좌표는 아니고
+   사진 속 형태를 본뜬 스키매틱임).
+------------------------------------------------------------- */
+const MAP_PAGE_1 = ["C","B","S","R","Q","P","O","N","M"];     // 展示室A・B
+const MAP_PAGE_2 = ["L","K","J","I","H","G","F","E","D","A"]; // 展示室C・D
+
+function buildPairedColumn(list){
+  const n = list.length;
+  const half = Math.ceil(n / 2);
+  const rightAsc = list.slice(0, half);           // 1 ~ half (오름차순, 오른쪽 줄)
+  const leftDesc = list.slice(half).reverse();     // n ~ half+1 (내림차순, 왼쪽 줄)
+  const rowCount = Math.max(leftDesc.length, rightAsc.length);
+
+  const wrap = document.createElement("div");
+  wrap.className = "map-cells-pair";
+
+  const makeCell = (booth) => {
+    if(!booth){
+      const blank = document.createElement("div");
+      blank.className = "map-cell blank";
+      return blank;
+    }
+    const num = booth.id.split("-")[1];
+    const cell = document.createElement("div");
+    cell.className = "map-cell" + (getNote(booth.id) ? " has-note" : "");
+    cell.textContent = num;
+    cell.title = `${booth.id} ${booth.name}`;
+    cell.addEventListener("click", () => openBoothModal(booth.id));
+    return cell;
+  };
+
+  for(let i = 0; i < rowCount; i++){
+    if(i > 0 && i % 4 === 0){
+      const gap = document.createElement("div");
+      gap.className = "map-aisle-gap";
+      wrap.appendChild(gap);
+    }
+    const rowEl = document.createElement("div");
+    rowEl.className = "map-pair-row";
+    rowEl.appendChild(makeCell(leftDesc[i]));
+    rowEl.appendChild(makeCell(rightAsc[i]));
+    wrap.appendChild(rowEl);
+  }
+
+  return wrap;
+}
+
+function renderMapView(page){
+  const mapGrid = document.getElementById("mapGrid");
+  mapGrid.innerHTML = "";
+
+  const order = page === "MAP2" ? MAP_PAGE_2 : MAP_PAGE_1;
+
+  order.forEach(r => {
+    const list = byRow[r];
+    if(!list || !list.length) return;
+
+    const col = document.createElement("div");
+    col.className = "map-col";
+
+    const label = document.createElement("div");
+    label.className = "map-col-label";
+    label.textContent = r;
+    col.appendChild(label);
+
+    col.appendChild(buildPairedColumn(list));
+    mapGrid.appendChild(col);
+  });
+
+  if(!mapGrid.querySelector(".map-col")){
+    mapGrid.innerHTML = '<div class="empty-state" style="display:block;">표시할 부스 데이터가 없어요.</div>';
+  }
+}
+
+/* ---------- 부스 상세 모달 (배치도에서 부스를 눌렀을 때) ---------- */
+function openBoothModal(boothId){
+  const booth = BOOTHS.find(b => b.id === boothId);
+  if(!booth) return;
+
+  const backdrop = document.getElementById("modalBackdrop");
+  const content = document.getElementById("modalContent");
+  content.innerHTML = "";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "modal-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", closeModal);
+  content.appendChild(closeBtn);
+
+  const head = document.createElement("div");
+  head.className = "pop-head";
+  head.style.marginTop = "6px";
+  const img = document.createElement("img");
+  if(booth.twitter){
+    img.src = localAvatarUrl(booth.twitter);
+    img.onerror = () => { img.style.visibility = "hidden"; };
+  } else {
+    img.style.visibility = "hidden";
+  }
+  const names = document.createElement("div");
+  names.className = "names";
+  names.innerHTML = `<div class="c-name">${escapeHtml(booth.name)}</div><div class="r-name">${escapeHtml(booth.rep)} ・ ${booth.id}</div>`;
+  head.appendChild(img);
+  head.appendChild(names);
+  content.appendChild(head);
+
+  const slot = document.createElement("div");
+  slot.className = "tweet-slot";
+  const ph = document.createElement("div");
+  ph.className = "placeholder";
+  ph.textContent = booth.twitter ? "탭하면 트윗을 불러옵니다." : "등록된 X 계정이 없습니다.";
+  slot.appendChild(ph);
+  content.appendChild(slot);
+  if(booth.twitter){
+    loadTimelineInto(slot, booth.twitter);
+  }
+
+  const links = document.createElement("div");
+  links.className = "pop-links";
+  if(booth.twitter){
+    links.innerHTML = `<a href="https://x.com/${booth.twitter}" target="_blank" rel="noopener">X 프로필 열기</a>`;
+  }
+  content.appendChild(links);
+
+  const memoBox = document.createElement("div");
+  memoBox.className = "memo-box";
+  memoBox.innerHTML = `
+    <label>내 메모 (이 브라우저에만 저장됨)</label>
+    <textarea placeholder="예: 2번째로 구매, 다음 케모켓 때 다시 확인">${escapeHtml(getNote(booth.id))}</textarea>
+    <div class="memo-actions">
+      <button type="button" class="save">저장</button>
+      <button type="button" class="delete">삭제</button>
+      <span class="memo-status"></span>
+    </div>
+  `;
+  const textarea = memoBox.querySelector("textarea");
+  const saveBtn = memoBox.querySelector(".save");
+  const deleteBtn = memoBox.querySelector(".delete");
+  const status = memoBox.querySelector(".memo-status");
+
+  saveBtn.addEventListener("click", () => {
+    setNote(booth.id, textarea.value);
+    updateNoteVisuals(booth.id);
+    renderNav();
+    if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
+    if(currentRow === "NOTES") renderGrid();
+    status.textContent = "저장됨";
+    setTimeout(() => { status.textContent = ""; }, 1500);
+  });
+  deleteBtn.addEventListener("click", () => {
+    textarea.value = "";
+    setNote(booth.id, "");
+    updateNoteVisuals(booth.id);
+    renderNav();
+    if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
+    if(currentRow === "NOTES") renderGrid();
+    status.textContent = "삭제됨";
+    setTimeout(() => { status.textContent = ""; }, 1500);
+  });
+
+  content.appendChild(memoBox);
+
+  backdrop.classList.add("open");
+}
+
+function closeModal(){
+  document.getElementById("modalBackdrop").classList.remove("open");
+}
+
+document.getElementById("modalBackdrop").addEventListener("click", (e) => {
+  if(e.target.id === "modalBackdrop") closeModal();
+});
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape") closeModal();
 });
 
 renderNav();
