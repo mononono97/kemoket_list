@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://platform.twitter.com https://cdn.syndication.twimg.com;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https://pbs.twimg.com https://abs.twimg.com https://ton.twimg.com;
+  font-src 'self' data:;
+  connect-src 'self' https://cdn.syndication.twimg.com https://syndication.twitter.com https://twitter.com https://x.com;
+  frame-src https://platform.twitter.com https://syndication.twitter.com;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+">
 <title>けもケット ブース一覧</title>
 <style>
   :root{
@@ -29,9 +41,6 @@
     background:var(--panel);
     color:var(--paper);
     padding:22px 20px 18px;
-    position:sticky;
-    top:0;
-    z-index:30;
     box-shadow:0 2px 10px rgba(0,0,0,.15);
   }
   .top-inner{
@@ -363,6 +372,7 @@
     bottom:calc(100% + 10px);
     transform:translateX(-50%);
     width:300px;
+    max-width:calc(100vw - 20px);
     background:var(--panel);
     color:var(--paper);
     border-radius:10px;
@@ -370,17 +380,25 @@
     box-shadow:0 12px 30px rgba(0,0,0,.35);
     text-align:left;
   }
+  .popover.below{
+    bottom:auto;
+    top:calc(100% + 10px);
+  }
   .booth.show-pop{ z-index:200; }
   .booth.show-pop .popover{display:block;}
   .popover::before{
     content:"";
     position:absolute;
     bottom:-6px;
-    left:50%;
+    left:var(--arrow-left, 50%);
     transform:translateX(-50%) rotate(45deg);
     width:12px;
     height:12px;
     background:var(--panel);
+  }
+  .popover.below::before{
+    bottom:auto;
+    top:-6px;
   }
   .pop-head{
     display:flex;
@@ -560,8 +578,8 @@
 
   @media (max-width:640px){
     .grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));}
-    .popover{width:250px; left:0; transform:none;}
-    .popover::before{left:24px; transform:rotate(45deg);}
+    .popover{width:250px;}
+    .popover::before{left:var(--arrow-left, 24px); transform:translateX(-50%) rotate(45deg);}
   }
 </style>
 </head>
@@ -836,8 +854,10 @@ function getNote(boothId){
   return (notes[boothId] || "").trim();
 }
 
+const MAX_NOTE_LENGTH = 1000;
+
 function setNote(boothId, text){
-  const trimmed = text.trim();
+  const trimmed = text.trim().slice(0, MAX_NOTE_LENGTH);
   if(trimmed){
     notes[boothId] = trimmed;
   } else {
@@ -887,7 +907,7 @@ function importNotesFromFile(file){
       let count = 0;
       Object.keys(incoming).forEach(id => {
         if(typeof incoming[id] === "string" && incoming[id].trim()){
-          notes[id] = incoming[id].trim();
+          notes[id] = incoming[id].trim().slice(0, MAX_NOTE_LENGTH);
           count++;
         }
       });
@@ -1004,7 +1024,7 @@ function makePopover(booth){
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
     <label>${escapeHtml(t("memoLabel"))}</label>
-    <textarea placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
+    <textarea maxlength="1000" placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
     <div class="memo-actions">
       <button type="button" class="save">${escapeHtml(t("save"))}</button>
       <button type="button" class="delete">${escapeHtml(t("delete"))}</button>
@@ -1047,6 +1067,49 @@ function updateNoteVisuals(boothId){
     card.classList.toggle("has-note", !!getNote(boothId));
   });
 }
+
+/* ---------- 팝오버 위치 보정 ----------
+   화면 폭이 애매해서 카드가 왼쪽/오른쪽 가장자리에 있을 때, 가운데 정렬된
+   팝오버가 화면 밖으로 잘려나가지 않도록 뷰포트 안쪽으로 위치를 조정함.
+   세로 공간이 부족하면 카드 위 대신 아래로 펼침.
+------------------------------------------------- */
+function positionPopover(card, pop){
+  const margin = 10;
+  pop.style.left = "";
+  pop.style.transform = "";
+  pop.style.removeProperty("--arrow-left");
+  pop.classList.remove("below");
+
+  // innerWidth/innerHeight can include scrollbar gutters that aren't actually
+  // visible content area, so use clientWidth/clientHeight for the real bounds.
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
+
+  const cardRect = card.getBoundingClientRect();
+  const popWidth = pop.offsetWidth;
+  const popHeight = pop.offsetHeight;
+  const cardCenter = cardRect.left + cardRect.width / 2;
+
+  if(cardRect.top < popHeight + margin * 2 && (viewportHeight - cardRect.bottom) > cardRect.top){
+    pop.classList.add("below");
+  }
+
+  const desired = cardCenter - popWidth / 2;
+  const minLeft = margin - cardRect.left;
+  const maxLeft = viewportWidth - margin - popWidth - cardRect.left;
+  const left = Math.max(minLeft, Math.min(desired - cardRect.left, maxLeft));
+
+  pop.style.left = `${left}px`;
+  pop.style.transform = "none";
+  pop.style.setProperty("--arrow-left", `${cardCenter - cardRect.left - left}px`);
+}
+
+window.addEventListener("resize", () => {
+  document.querySelectorAll(".booth.show-pop").forEach(card => {
+    const pop = card.querySelector(".popover");
+    if(pop) positionPopover(card, pop);
+  });
+});
 
 function loadTimelineInto(slot, handle){
   ensureTwitterWidgets(() => {
@@ -1183,12 +1246,20 @@ function renderGrid(){
     let timelineLoaded = false;
     const open = () => {
       card.classList.add("show-pop");
+      positionPopover(card, pop);
       if(booth.twitter && !timelineLoaded){
         timelineLoaded = true;
         loadTimelineInto(slot, booth.twitter);
       }
     };
-    const close = () => card.classList.remove("show-pop");
+    // 스크롤로 화면을 벗어나 자동으로 닫힐 때는 작성 중인 메모 초안을 유지함(다시 열면 그대로 남아있음).
+    const closeSoft = () => card.classList.remove("show-pop");
+    // 사용자가 직접 닫을 때(카드 재클릭, 바깥 클릭)는 저장하지 않은 메모 초안을 버림.
+    const close = () => {
+      closeSoft();
+      const textarea = pop.querySelector(".memo-box textarea");
+      if(textarea) textarea.value = getNote(booth.id);
+    };
 
     // 클릭(탭)으로 토글: PC/모바일 공통
     card.addEventListener("click", (e) => {
@@ -1201,8 +1272,29 @@ function renderGrid(){
 }
 
 document.addEventListener("click", () => {
-  document.querySelectorAll(".booth.show-pop").forEach(el => el.classList.remove("show-pop"));
+  document.querySelectorAll(".booth.show-pop").forEach(el => {
+    el.classList.remove("show-pop");
+    const textarea = el.querySelector(".memo-box textarea");
+    if(textarea) textarea.value = getNote(el.dataset.boothId);
+  });
 });
+
+// 스크롤로 부스 카드가 화면 밖으로 벗어나면 팝오버를 자동으로 닫음(메모 초안은 유지).
+let scrollCloseQueued = false;
+window.addEventListener("scroll", () => {
+  if(scrollCloseQueued) return;
+  scrollCloseQueued = true;
+  requestAnimationFrame(() => {
+    scrollCloseQueued = false;
+    const viewportHeight = document.documentElement.clientHeight;
+    document.querySelectorAll(".booth.show-pop").forEach(card => {
+      const rect = card.getBoundingClientRect();
+      if(rect.bottom < 0 || rect.top > viewportHeight){
+        card.classList.remove("show-pop");
+      }
+    });
+  });
+}, { passive: true });
 
 document.getElementById("searchInput").addEventListener("input", (e) => {
   currentQuery = e.target.value.trim();
@@ -1342,7 +1434,7 @@ function openBoothModal(boothId){
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
     <label>${escapeHtml(t("memoLabel"))}</label>
-    <textarea placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
+    <textarea maxlength="1000" placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
     <div class="memo-actions">
       <button type="button" class="save">${escapeHtml(t("save"))}</button>
       <button type="button" class="delete">${escapeHtml(t("delete"))}</button>
