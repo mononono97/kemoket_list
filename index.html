@@ -634,7 +634,6 @@ const I18N = {
     brandSub: "서클 배치 뷰어",
     searchPlaceholder: "서클명 / 대표자명 / 배치번호 검색",
     footerSource: "데이터 출처",
-    footerDesc: "프로필 사진은 avatars/ 폴더에 직접 저장해둔 로컬 이미지 파일(X 핸들명.jpg)을 사용합니다. 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). 부스를 클릭(탭)하면 열리고 닫힙니다.",
     helpBtn: "❓ 도움말",
     helpTitle: "도움말",
     helpBody: [
@@ -680,7 +679,6 @@ const I18N = {
     brandSub: "Circle Layout Viewer",
     searchPlaceholder: "Search by circle name / rep name / booth ID",
     footerSource: "Data source",
-    footerDesc: "Profile photos use local image files (X handle.jpg) saved directly in the avatars/ folder. Tweet cards load the official X timeline widget based on each circle's X account (pinned tweet if present, otherwise the latest tweet). Click (tap) a booth to open or close it.",
     helpBtn: "❓ Help",
     helpTitle: "Help",
     helpBody: [
@@ -726,7 +724,6 @@ const I18N = {
     brandSub: "サークル配置ビューア",
     searchPlaceholder: "サークル名 / 代表者名 / 配置番号 検索",
     footerSource: "データ出典",
-    footerDesc: "プロフィール写真は avatars/ フォルダに直接保存したローカル画像ファイル（Xハンドル名.jpg）を使用します。ツイートカードは各サークルのXアカウントに基づいてX公式タイムラインウィジェットを読み込んで表示します（固定ツイートがあればそれ、なければ最新ツイートが表示されます）。ブースをクリック（タップ）すると開閉します。",
     helpBtn: "❓ ヘルプ",
     helpTitle: "ヘルプ",
     helpBody: [
@@ -790,7 +787,7 @@ function applyStaticTexts(){
   document.getElementById("exportNotesBtn").textContent = t("exportNotesBtn");
   document.getElementById("importNotesBtn").textContent = t("importNotesBtn");
   document.getElementById("siteFooter").innerHTML =
-    `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a> · ${t("footerDesc")}`;
+    `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a>`;
   document.querySelectorAll("#langSwitch button").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
   });
