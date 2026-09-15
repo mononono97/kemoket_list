@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>けもケット 配置図ビューア</title>
+<title>けもケット ブース一覧</title>
 <style>
   :root{
     --paper:#f2f0e6;
@@ -75,6 +75,30 @@
     width:180px;
   }
   .search-box input::placeholder{color:#c7d2c1;}
+
+  .lang-switch{
+    display:flex;
+    gap:4px;
+  }
+  .lang-switch button{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.25);
+    background:transparent;
+    color:var(--paper);
+    padding:5px 10px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .lang-switch button:hover{background:rgba(255,255,255,.12);}
+  .lang-switch button.active{
+    background:var(--clay);
+    border-color:var(--clay);
+    color:#fff;
+  }
 
   nav.rows{
     max-width:1180px;
@@ -505,8 +529,13 @@
 <header class="top">
   <div class="top-inner">
     <div class="brand">
-      <div class="mark">けもケット 配置図</div>
-      <div class="sub">サークル配置ビューア</div>
+      <div class="mark" id="brandMark">けもケット ブース一覧</div>
+      <div class="sub" id="brandSub">サークル配置ビューア</div>
+    </div>
+    <div class="lang-switch" id="langSwitch">
+      <button type="button" data-lang="ko">KO</button>
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="jp">JP</button>
     </div>
     <div class="search-box">
       <input id="searchInput" type="text" placeholder="サークル名 / 代表者名 / 配置番号 검색">
@@ -529,10 +558,7 @@
   <div class="modal" id="modalContent"></div>
 </div>
 
-<footer>
-  데이터 출처: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a> ·
-  프로필 사진은 avatars/ 폴더에 직접 저장해둔 로컬 이미지 파일(X 핸들명.jpg)을 사용합니다. 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). PC에서는 호버, 모바일에서는 탭으로 동작합니다.
-</footer>
+<footer id="siteFooter"></footer>
 
 <script>
 /* ---------- 데이터 ----------
@@ -551,6 +577,135 @@ BOOTHS.forEach(b => { if(byRow[b.block]) byRow[b.block].push(b); });
 let currentRow = ALL_ROWS.find(r => byRow[r].length > 0) || "A";
 let currentQuery = "";
 let widgetsLoaded = false;
+
+/* ---------- 다국어(i18n) ----------
+   서클명/대표자명은 원본 그대로 두고, 그 외 UI 텍스트만 언어별로 관리함.
+------------------------------------ */
+const I18N = {
+  ko: {
+    brandMark: "케모켓 부스 목록",
+    brandSub: "서클 배치 뷰어",
+    searchPlaceholder: "서클명 / 대표자명 / 배치번호 검색",
+    footerSource: "데이터 출처",
+    footerDesc: "프로필 사진은 avatars/ 폴더에 직접 저장해둔 로컬 이미지 파일(X 핸들명.jpg)을 사용합니다. 트윗 카드는 각 서클의 X 계정을 기반으로 X 공식 타임라인 위젯을 불러와 표시합니다(고정 트윗이 있으면 그것이, 없으면 최신 트윗이 나타납니다). 부스를 클릭(탭)하면 열리고 닫힙니다.",
+    allBtn: "📋 전체",
+    notesBtn: "📝 메모",
+    notesBtnCount: "📝 메모({n})",
+    mapBtn1: "🗺️ 배치도1",
+    mapBtn2: "🗺️ 배치도2",
+    mapHint: "부스를 눌러서 메모/작가 정보를 확인하세요",
+    circleCount: "{n}개 서클",
+    notesCount: "메모 남긴 서클 {n}개",
+    emptyDefault: "검색 결과가 없어요.",
+    emptyNotes: "아직 메모를 남긴 부스가 없어요. 부스를 열어서 메모를 추가해보세요.",
+    noBoothData: "표시할 부스 데이터가 없어요.",
+    tweetLoadHint: "탭하면 트윗을 불러옵니다.",
+    noTwitterHint: "등록된 X 계정이 없습니다.",
+    tweetLoadFail: "트윗을 불러오지 못했어요.",
+    openProfile: "X 프로필 열기",
+    memoLabel: "내 메모 (이 브라우저에만 저장됨)",
+    memoPlaceholder: "예: 2번째로 구매, 다음 케모켓 때 다시 확인",
+    save: "저장",
+    delete: "삭제",
+    savedStatus: "저장됨",
+    deletedStatus: "삭제됨",
+  },
+  en: {
+    brandMark: "Kemoket Booth List",
+    brandSub: "Circle Layout Viewer",
+    searchPlaceholder: "Search by circle name / rep name / booth ID",
+    footerSource: "Data source",
+    footerDesc: "Profile photos use local image files (X handle.jpg) saved directly in the avatars/ folder. Tweet cards load the official X timeline widget based on each circle's X account (pinned tweet if present, otherwise the latest tweet). Click (tap) a booth to open or close it.",
+    allBtn: "📋 All",
+    notesBtn: "📝 Notes",
+    notesBtnCount: "📝 Notes({n})",
+    mapBtn1: "🗺️ Map 1",
+    mapBtn2: "🗺️ Map 2",
+    mapHint: "Click a booth to see notes/artist info",
+    circleCount: "{n} circles",
+    notesCount: "{n} circles with notes",
+    emptyDefault: "No search results.",
+    emptyNotes: "No booths with notes yet. Open a booth to add one.",
+    noBoothData: "No booth data to display.",
+    tweetLoadHint: "Tap to load tweet.",
+    noTwitterHint: "No X account registered.",
+    tweetLoadFail: "Failed to load tweet.",
+    openProfile: "Open X Profile",
+    memoLabel: "My Notes (saved only in this browser)",
+    memoPlaceholder: "e.g. Buy 2nd copy, check again at next Kemoket",
+    save: "Save",
+    delete: "Delete",
+    savedStatus: "Saved",
+    deletedStatus: "Deleted",
+  },
+  jp: {
+    brandMark: "けもケット ブース一覧",
+    brandSub: "サークル配置ビューア",
+    searchPlaceholder: "サークル名 / 代表者名 / 配置番号 検索",
+    footerSource: "データ出典",
+    footerDesc: "プロフィール写真は avatars/ フォルダに直接保存したローカル画像ファイル（Xハンドル名.jpg）を使用します。ツイートカードは各サークルのXアカウントに基づいてX公式タイムラインウィジェットを読み込んで表示します（固定ツイートがあればそれ、なければ最新ツイートが表示されます）。ブースをクリック（タップ）すると開閉します。",
+    allBtn: "📋 全体",
+    notesBtn: "📝 メモ",
+    notesBtnCount: "📝 メモ({n})",
+    mapBtn1: "🗺️ 配置図1",
+    mapBtn2: "🗺️ 配置図2",
+    mapHint: "ブースを押してメモ・サークル情報を確認してください",
+    circleCount: "{n}サークル",
+    notesCount: "メモを残したサークル {n}件",
+    emptyDefault: "検索結果がありません。",
+    emptyNotes: "まだメモを残したブースがありません。ブースを開いてメモを追加してみましょう。",
+    noBoothData: "表示するブースデータがありません。",
+    tweetLoadHint: "タップしてツイートを読み込みます。",
+    noTwitterHint: "登録されたXアカウントがありません。",
+    tweetLoadFail: "ツイートを読み込めませんでした。",
+    openProfile: "Xプロフィールを開く",
+    memoLabel: "マイメモ（このブラウザにのみ保存されます）",
+    memoPlaceholder: "例：2回目の購入、次回のけもケットで再確認",
+    save: "保存",
+    delete: "削除",
+    savedStatus: "保存済み",
+    deletedStatus: "削除済み",
+  },
+};
+const LANG_KEY = "kemoket-lang";
+let currentLang = localStorage.getItem(LANG_KEY);
+if(!I18N[currentLang]) currentLang = "ko";
+
+function t(key, vars){
+  let str = (I18N[currentLang] && I18N[currentLang][key]) || I18N.ko[key] || key;
+  if(vars){
+    Object.keys(vars).forEach(k => { str = str.replace(`{${k}}`, vars[k]); });
+  }
+  return str;
+}
+
+function applyStaticTexts(){
+  document.documentElement.lang = currentLang;
+  document.title = t("brandMark");
+  document.getElementById("brandMark").textContent = t("brandMark");
+  document.getElementById("brandSub").textContent = t("brandSub");
+  document.getElementById("searchInput").placeholder = t("searchPlaceholder");
+  document.getElementById("siteFooter").innerHTML =
+    `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a> · ${t("footerDesc")}`;
+  document.querySelectorAll("#langSwitch button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === currentLang);
+  });
+}
+
+function setLang(lang){
+  if(!I18N[lang]) return;
+  currentLang = lang;
+  try { localStorage.setItem(LANG_KEY, currentLang); } catch {}
+  applyStaticTexts();
+  renderNav();
+  renderGrid();
+}
+
+document.getElementById("langSwitch").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-lang]");
+  if(!btn) return;
+  setLang(btn.dataset.lang);
+});
 
 /* ---------- 부스별 메모 ----------
    브라우저(localStorage)에만 저장되는 개인 메모. 서버로 전송되지 않고,
@@ -611,6 +766,14 @@ function localAvatarUrl(handle){
 function renderNav(){
   const nav = document.getElementById("rowNav");
   nav.innerHTML = "";
+
+  const allBtn = document.createElement("button");
+  allBtn.className = "memo-tab-btn";
+  allBtn.textContent = t("allBtn");
+  if(currentRow === "ALL") allBtn.classList.add("active");
+  allBtn.addEventListener("click", () => { currentRow = "ALL"; renderNav(); renderGrid(); });
+  nav.appendChild(allBtn);
+
   ALL_ROWS.forEach(r => {
     const btn = document.createElement("button");
     btn.textContent = r;
@@ -623,21 +786,21 @@ function renderNav(){
   const noteCount = Object.keys(notes).length;
   const noteBtn = document.createElement("button");
   noteBtn.className = "memo-tab-btn";
-  noteBtn.textContent = noteCount ? `📝 메모(${noteCount})` : "📝 메모";
+  noteBtn.textContent = noteCount ? t("notesBtnCount", { n: noteCount }) : t("notesBtn");
   if(currentRow === "NOTES") noteBtn.classList.add("active");
   noteBtn.addEventListener("click", () => { currentRow = "NOTES"; renderNav(); renderGrid(); });
   nav.appendChild(noteBtn);
 
   const mapBtn1 = document.createElement("button");
   mapBtn1.className = "memo-tab-btn";
-  mapBtn1.textContent = "🗺️ 배치도1";
+  mapBtn1.textContent = t("mapBtn1");
   if(currentRow === "MAP1") mapBtn1.classList.add("active");
   mapBtn1.addEventListener("click", () => { currentRow = "MAP1"; renderNav(); renderGrid(); });
   nav.appendChild(mapBtn1);
 
   const mapBtn2 = document.createElement("button");
   mapBtn2.className = "memo-tab-btn";
-  mapBtn2.textContent = "🗺️ 배치도2";
+  mapBtn2.textContent = t("mapBtn2");
   if(currentRow === "MAP2") mapBtn2.classList.add("active");
   mapBtn2.addEventListener("click", () => { currentRow = "MAP2"; renderNav(); renderGrid(); });
   nav.appendChild(mapBtn2);
@@ -668,26 +831,26 @@ function makePopover(booth){
   const ph = document.createElement("div");
   ph.className = "placeholder";
   ph.textContent = booth.twitter
-    ? "탭하면 트윗을 불러옵니다."
-    : "등록된 X 계정이 없습니다.";
+    ? t("tweetLoadHint")
+    : t("noTwitterHint");
   slot.appendChild(ph);
   pop.appendChild(slot);
 
   const links = document.createElement("div");
   links.className = "pop-links";
   if(booth.twitter){
-    links.innerHTML = `<a href="https://x.com/${booth.twitter}" target="_blank" rel="noopener">X 프로필 열기</a>`;
+    links.innerHTML = `<a href="https://x.com/${booth.twitter}" target="_blank" rel="noopener">${escapeHtml(t("openProfile"))}</a>`;
   }
   pop.appendChild(links);
 
   const memoBox = document.createElement("div");
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
-    <label>내 메모 (이 브라우저에만 저장됨)</label>
-    <textarea placeholder="예: 2번째로 구매, 다음 케모켓 때 다시 확인">${escapeHtml(getNote(booth.id))}</textarea>
+    <label>${escapeHtml(t("memoLabel"))}</label>
+    <textarea placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
     <div class="memo-actions">
-      <button type="button" class="save">저장</button>
-      <button type="button" class="delete">삭제</button>
+      <button type="button" class="save">${escapeHtml(t("save"))}</button>
+      <button type="button" class="delete">${escapeHtml(t("delete"))}</button>
       <span class="memo-status"></span>
     </div>
   `;
@@ -702,7 +865,7 @@ function makePopover(booth){
   saveBtn.addEventListener("click", () => {
     setNote(booth.id, textarea.value);
     updateNoteVisuals(booth.id);
-    status.textContent = "저장됨";
+    status.textContent = t("savedStatus");
     setTimeout(() => { status.textContent = ""; }, 1500);
     if(currentRow === "NOTES") renderGrid();
     renderNav();
@@ -711,7 +874,7 @@ function makePopover(booth){
     textarea.value = "";
     setNote(booth.id, "");
     updateNoteVisuals(booth.id);
-    status.textContent = "삭제됨";
+    status.textContent = t("deletedStatus");
     setTimeout(() => { status.textContent = ""; }, 1500);
     if(currentRow === "NOTES") renderGrid();
     renderNav();
@@ -738,7 +901,7 @@ function loadTimelineInto(slot, handle){
       container,
       { tweetLimit: 1, theme: "dark", dnt: true, chrome: "noheader nofooter noborders transparent" }
     ).catch(() => {
-      slot.innerHTML = '<div class="placeholder">트윗을 불러오지 못했어요.</div>';
+      slot.innerHTML = `<div class="placeholder">${escapeHtml(t("tweetLoadFail"))}</div>`;
     });
   });
 }
@@ -762,8 +925,8 @@ function renderGrid(){
   if(isMapView){
     document.getElementById("currentLetter").textContent = "🗺️";
     document.getElementById("currentCount").textContent = currentRow === "MAP1"
-      ? "展示室A・B — 부스를 눌러서 메모/작가 정보를 확인하세요"
-      : "展示室C・D — 부스를 눌러서 메모/작가 정보를 확인하세요";
+      ? `展示室A・B — ${t("mapHint")}`
+      : `展示室C・D — ${t("mapHint")}`;
     renderMapView(currentRow);
     return;
   }
@@ -771,12 +934,15 @@ function renderGrid(){
   grid.innerHTML = "";
 
   const isNotesView = currentRow === "NOTES";
-  document.getElementById("currentLetter").textContent = isNotesView ? "📝" : currentRow;
+  const isAllView = currentRow === "ALL";
+  document.getElementById("currentLetter").textContent = isNotesView ? "📝" : isAllView ? "📋" : currentRow;
 
   let list;
   if(isNotesView){
     const noteIds = new Set(Object.keys(notes));
     list = BOOTHS.filter(b => noteIds.has(b.id));
+  } else if(isAllView){
+    list = BOOTHS;
   } else {
     list = byRow[currentRow] || [];
   }
@@ -792,12 +958,12 @@ function renderGrid(){
   }
 
   document.getElementById("currentCount").textContent = isNotesView
-    ? `메모 남긴 서클 ${list.length}개`
-    : `${list.length}サークル`;
+    ? t("notesCount", { n: list.length })
+    : t("circleCount", { n: list.length });
   document.getElementById("emptyState").style.display = list.length ? "none" : "block";
   document.getElementById("emptyState").textContent = isNotesView
-    ? "아직 메모를 남긴 부스가 없어요. 부스를 열어서 메모를 추가해보세요."
-    : "검색 결과가 없어요.";
+    ? t("emptyNotes")
+    : t("emptyDefault");
 
   list.forEach(booth => {
     const card = document.createElement("div");
@@ -959,7 +1125,7 @@ function renderMapView(page){
   });
 
   if(!mapGrid.querySelector(".map-col")){
-    mapGrid.innerHTML = '<div class="empty-state" style="display:block;">표시할 부스 데이터가 없어요.</div>';
+    mapGrid.innerHTML = `<div class="empty-state" style="display:block;">${escapeHtml(t("noBoothData"))}</div>`;
   }
 }
 
@@ -999,7 +1165,7 @@ function openBoothModal(boothId){
   slot.className = "tweet-slot";
   const ph = document.createElement("div");
   ph.className = "placeholder";
-  ph.textContent = booth.twitter ? "탭하면 트윗을 불러옵니다." : "등록된 X 계정이 없습니다.";
+  ph.textContent = booth.twitter ? t("tweetLoadHint") : t("noTwitterHint");
   slot.appendChild(ph);
   content.appendChild(slot);
   if(booth.twitter){
@@ -1009,18 +1175,18 @@ function openBoothModal(boothId){
   const links = document.createElement("div");
   links.className = "pop-links";
   if(booth.twitter){
-    links.innerHTML = `<a href="https://x.com/${booth.twitter}" target="_blank" rel="noopener">X 프로필 열기</a>`;
+    links.innerHTML = `<a href="https://x.com/${booth.twitter}" target="_blank" rel="noopener">${escapeHtml(t("openProfile"))}</a>`;
   }
   content.appendChild(links);
 
   const memoBox = document.createElement("div");
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
-    <label>내 메모 (이 브라우저에만 저장됨)</label>
-    <textarea placeholder="예: 2번째로 구매, 다음 케모켓 때 다시 확인">${escapeHtml(getNote(booth.id))}</textarea>
+    <label>${escapeHtml(t("memoLabel"))}</label>
+    <textarea placeholder="${escapeHtml(t("memoPlaceholder"))}">${escapeHtml(getNote(booth.id))}</textarea>
     <div class="memo-actions">
-      <button type="button" class="save">저장</button>
-      <button type="button" class="delete">삭제</button>
+      <button type="button" class="save">${escapeHtml(t("save"))}</button>
+      <button type="button" class="delete">${escapeHtml(t("delete"))}</button>
       <span class="memo-status"></span>
     </div>
   `;
@@ -1035,7 +1201,7 @@ function openBoothModal(boothId){
     renderNav();
     if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
     if(currentRow === "NOTES") renderGrid();
-    status.textContent = "저장됨";
+    status.textContent = t("savedStatus");
     setTimeout(() => { status.textContent = ""; }, 1500);
   });
   deleteBtn.addEventListener("click", () => {
@@ -1045,7 +1211,7 @@ function openBoothModal(boothId){
     renderNav();
     if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
     if(currentRow === "NOTES") renderGrid();
-    status.textContent = "삭제됨";
+    status.textContent = t("deletedStatus");
     setTimeout(() => { status.textContent = ""; }, 1500);
   });
 
@@ -1065,6 +1231,7 @@ document.addEventListener("keydown", (e) => {
   if(e.key === "Escape") closeModal();
 });
 
+applyStaticTexts();
 renderNav();
 renderGrid();
 </script>
