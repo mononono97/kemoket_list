@@ -37,6 +37,40 @@
     line-height:1.5;
   }
 
+  /* 스크롤바를 사이트 테마 색상에 맞춤 */
+  html{
+    scrollbar-color:var(--moss) var(--paper);
+    scrollbar-width:thin;
+  }
+  ::-webkit-scrollbar{
+    width:12px;
+    height:12px;
+  }
+  ::-webkit-scrollbar-track{
+    background:var(--paper);
+  }
+  ::-webkit-scrollbar-thumb{
+    background:var(--moss);
+    border-radius:8px;
+    border:3px solid var(--paper);
+  }
+  ::-webkit-scrollbar-thumb:hover{
+    background:var(--clay);
+  }
+  .modal{
+    scrollbar-color:rgba(255,255,255,.35) transparent;
+  }
+  .modal::-webkit-scrollbar-track{
+    background:transparent;
+  }
+  .modal::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.3);
+    border:3px solid var(--panel);
+  }
+  .modal::-webkit-scrollbar-thumb:hover{
+    background:rgba(255,255,255,.5);
+  }
+
   header.top{
     background:var(--panel);
     color:var(--paper);
@@ -362,9 +396,9 @@
 
   /* 메모가 달린 부스 표시 */
   .booth.has-note{
-    border-color:#c9973b;
-    box-shadow:0 0 0 1px #c9973b inset;
-    background:#fbf3e2;
+    border-color:var(--clay);
+    box-shadow:0 0 0 1px var(--clay) inset;
+    background:#fce3d2;
   }
   .memo-flag{
     position:absolute;
@@ -663,9 +697,9 @@
   }
   .map-cell:hover{ border-color:var(--moss); }
   .map-cell.has-note{
-    background:#c9973b;
-    border-color:#c9973b;
-    color:#241b06;
+    background:var(--clay);
+    border-color:var(--clay);
+    color:#fff;
     font-weight:700;
   }
   .map-cell.visit-planned{
@@ -697,7 +731,7 @@
     margin-right:5px;
   }
   .map-legend .swatch.normal{ background:var(--card-bg); border:1px solid var(--line); }
-  .map-legend .swatch.note{ background:#c9973b; }
+  .map-legend .swatch.note{ background:var(--clay); }
 
   /* 모달 */
   .modal-backdrop{
@@ -721,6 +755,9 @@
     max-height:85vh;
     overflow-y:auto;
     box-shadow:0 20px 50px rgba(0,0,0,.4);
+  }
+  .modal.modal-wide{
+    width:560px;
   }
   .modal .modal-close{
     float:right;
@@ -831,11 +868,11 @@ const I18N = {
     helpBtn: "❓ 도움말",
     helpTitle: "도움말",
     helpBody: [
-      "이 사이트는 케모켓 부스 목록을 쉽게 보기 위해 만든 사이트 입니다.",
-      "자동 번역 및 개발에 AI를 사용하여 내용에 오류가 있을 수 있습니다.",
-      "자세한 내용은 {link} 을 참고해주세요",
-      "모든 내용은 단말에만 저장되며, 단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
-      "메모(📝) 탭에서 지금까지 작성한 메모, 방문 예정/완료 상태, 예산을 파일로 내보내거나, 내보낸 파일로 복원(가져오기)할 수 있습니다.",
+      "이 사이트는 케모켓 부스 목록을 쉽게 보기 위해 만든 사이트 입니다.\n자동 번역 및 개발에 AI를 사용하여 내용에 오류가 있을 수 있습니다.\n자세한 내용은 {link} 을 참고해주세요",
+      "모든 내용은 단말에만 저장되며,\n단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
+      "검색창에서는 현재 탭에 위치한 작가를 부스 이름,\n작가 이름으로 필터링 가능합니다(전체 탭에서는 전체 검색)",
+      "메모(📝) 탭에서 내가 메모해둔 작가들을 확인 가능하며,\n방문 예정 혹은 방문 완료 기준으로 필터링 할 수 있습니다.\n지금까지 작성한 메모, 방문 예정/완료 상태, 예산을 파일로 내보내거나,\n내보낸 파일로 복원(가져오기)할 수 있습니다.",
+      "배치도에서는 방문 예정인 부스는 노란색,\n방문 완료한 부스는 초록색으로 표시됩니다.",
       "언어는 한국어, 영어, 일본어가 지원됩니다.",
       "인터넷 연결이 좋지 않을 시, 작가의 프로필 사진이 보이지 않을 수 있습니다.",
       "제작 : @Chung_Hwani",
@@ -847,9 +884,9 @@ const I18N = {
     mapBtn2: "🗺️ 배치도2",
     mapHint: "부스를 눌러서 메모/작가 정보를 확인하세요",
     circleCount: "{n}개 서클",
-    notesCount: "메모 남긴 서클 {n}개",
+    notesCount: "메모·방문·예산 등록 서클 {n}개",
     emptyDefault: "검색 결과가 없어요.",
-    emptyNotes: "아직 메모를 남긴 부스가 없어요. 부스를 열어서 메모를 추가해보세요.",
+    emptyNotes: "아직 등록된 부스가 없어요. 부스를 열어서 메모, 방문 상태, 예산 중 하나를 추가해보세요.",
     noBoothData: "표시할 부스 데이터가 없어요.",
     tweetLoadHint: "탭하면 트윗을 불러옵니다.",
     noTwitterHint: "등록된 X 계정이 없습니다.",
@@ -883,11 +920,11 @@ const I18N = {
     helpBtn: "❓ Help",
     helpTitle: "Help",
     helpBody: [
-      "This site was made to make it easy to browse the Kemoket booth list.",
-      "AI was used for automatic translation and development, so there may be errors in the content.",
-      "For more details, please refer to {link}",
-      "All data is stored only on your device — if you clear your browser data, anything you've written may be lost.",
-      "In the Notes (📝) tab, you can export the notes, visit statuses, and budgets you've entered so far to a file, or restore them by importing that file.",
+      "This site was made to make it easy to browse the Kemoket booth list.\nAI was used for automatic translation and development, so there may be errors in the content.\nFor more details, please refer to {link}",
+      "All data is stored only on your device,\nand may be lost if you clear your browser's site data.",
+      "The search box filters circles in the current tab by booth name\nor circle name (in the All tab, it searches everything).",
+      "In the Notes (📝) tab, you can see the circles you've noted,\nand filter them by Plan to Visit or Visited status.\nYou can export the notes, visit statuses, and budgets you've entered so far to a file,\nor restore them by importing that file.",
+      "On the floor map, booths marked Plan to Visit are shown in yellow,\nand booths marked Visited are shown in green.",
       "Korean, English, and Japanese are supported.",
       "If your internet connection is poor, artist profile photos may not display.",
       "Made by: @Chung_Hwani",
@@ -899,9 +936,9 @@ const I18N = {
     mapBtn2: "🗺️ Map 2",
     mapHint: "Click a booth to see notes/artist info",
     circleCount: "{n} circles",
-    notesCount: "{n} circles with notes",
+    notesCount: "{n} circles with notes/visit/budget",
     emptyDefault: "No search results.",
-    emptyNotes: "No booths with notes yet. Open a booth to add one.",
+    emptyNotes: "No booths tracked yet. Open a booth to add a note, visit status, or budget.",
     noBoothData: "No booth data to display.",
     tweetLoadHint: "Tap to load tweet.",
     noTwitterHint: "No X account registered.",
@@ -935,11 +972,11 @@ const I18N = {
     helpBtn: "❓ ヘルプ",
     helpTitle: "ヘルプ",
     helpBody: [
-      "このサイトは、けもケットのブース一覧を簡単に見られるように作られたサイトです。",
-      "自動翻訳および開発にAIを使用しているため、内容に誤りがある場合があります。",
-      "詳細は {link} をご参照ください。",
-      "すべての内容は端末にのみ保存され、端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
-      "メモ（📝）タブから、これまで書いたメモ・訪問予定/済みの状態・予算をファイルにエクスポートしたり、そのファイルから復元（インポート）したりできます。",
+      "このサイトは、けもケットのブース一覧を簡単に見られるように作られたサイトです。\n自動翻訳および開発にAIを使用しているため、内容に誤りがある場合があります。\n詳細は {link} をご参照ください。",
+      "すべての内容は端末にのみ保存され、\n端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
+      "検索欄では現在のタブにいるサークルをブース名、\nサークル名で絞り込めます（全体タブでは全体検索）。",
+      "メモ（📝）タブでは自分がメモしたサークルを確認でき、\n訪問予定または訪問済みの状態で絞り込むことができます。\nこれまで書いたメモ・訪問予定/済みの状態・予算をファイルにエクスポートしたり、\nそのファイルから復元（インポート）したりできます。",
+      "配置図では、訪問予定のブースは黄色、\n訪問済みのブースは緑色で表示されます。",
       "言語は韓国語・英語・日本語に対応しています。",
       "インターネット接続が不安定な場合、作家のプロフィール写真が表示されないことがあります。",
       "制作：@Chung_Hwani",
@@ -951,9 +988,9 @@ const I18N = {
     mapBtn2: "🗺️ 配置図2",
     mapHint: "ブースを押してメモ・サークル情報を確認してください",
     circleCount: "{n}サークル",
-    notesCount: "メモを残したサークル {n}件",
+    notesCount: "メモ・訪問・予算登録サークル {n}件",
     emptyDefault: "検索結果がありません。",
-    emptyNotes: "まだメモを残したブースがありません。ブースを開いてメモを追加してみましょう。",
+    emptyNotes: "まだ登録されたブースがありません。ブースを開いてメモ・訪問状態・予算のいずれかを追加してみましょう。",
     noBoothData: "表示するブースデータがありません。",
     tweetLoadHint: "タップしてツイートを読み込みます。",
     noTwitterHint: "登録されたXアカウントがありません。",
@@ -1580,8 +1617,12 @@ function renderGrid(){
 
   let list;
   if(isNotesView){
-    const noteIds = new Set(Object.keys(notes));
-    list = BOOTHS.filter(b => noteIds.has(b.id));
+    const trackedIds = new Set([
+      ...Object.keys(notes),
+      ...Object.keys(visitStatus),
+      ...Object.keys(budgets),
+    ]);
+    list = BOOTHS.filter(b => trackedIds.has(b.id));
     if(notesVisitFilter !== "all"){
       list = list.filter(b => getVisitStatus(b.id) === notesVisitFilter);
     }
@@ -1834,6 +1875,7 @@ function openBoothModal(boothId){
   const backdrop = document.getElementById("modalBackdrop");
   const content = document.getElementById("modalContent");
   content.innerHTML = "";
+  content.classList.remove("modal-wide");
 
   const closeBtn = document.createElement("button");
   closeBtn.className = "modal-close";
@@ -1973,6 +2015,7 @@ function openHelpModal(){
   const backdrop = document.getElementById("modalBackdrop");
   const content = document.getElementById("modalContent");
   content.innerHTML = "";
+  content.classList.add("modal-wide");
 
   const closeBtn = document.createElement("button");
   closeBtn.className = "modal-close";
@@ -1990,7 +2033,7 @@ function openHelpModal(){
   const link = `<a href="https://skypalette.jp/kemoket/" target="_blank" rel="noopener">https://skypalette.jp/kemoket/</a>`;
   const paragraphs = (I18N[currentLang] && I18N[currentLang].helpBody) || I18N.ko.helpBody;
   body.innerHTML = paragraphs
-    .map(line => `<p>${escapeHtml(line).replace("{link}", link)}</p>`)
+    .map(line => `<p>${escapeHtml(line).replace("{link}", link).replace(/\n/g, "<br>")}</p>`)
     .join("");
   content.appendChild(body);
 
