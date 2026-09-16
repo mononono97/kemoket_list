@@ -109,20 +109,57 @@
     color:#fff;
   }
 
-  .help-btn{
+  .settings-wrap{
+    position:relative;
+  }
+  .settings-btn{
     appearance:none;
     border:1px solid rgba(255,255,255,.25);
     background:transparent;
     color:var(--paper);
-    padding:5px 12px;
-    border-radius:4px;
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:.03em;
+    width:34px;
+    height:34px;
+    border-radius:6px;
+    font-size:16px;
+    line-height:1;
     cursor:pointer;
     transition:background .15s;
   }
-  .help-btn:hover{background:rgba(255,255,255,.12);}
+  .settings-btn:hover{background:rgba(255,255,255,.12);}
+  .settings-menu{
+    display:none;
+    position:fixed;
+    z-index:50;
+    width:190px;
+    max-width:calc(100vw - 20px);
+    background:var(--panel);
+    border-radius:10px;
+    padding:12px;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  .settings-menu.open{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .settings-menu .lang-switch{
+    justify-content:flex-end;
+  }
+  .settings-item{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.25);
+    background:transparent;
+    color:var(--paper);
+    padding:7px 12px;
+    border-radius:6px;
+    font-size:12.5px;
+    font-weight:600;
+    letter-spacing:.02em;
+    cursor:pointer;
+    text-align:left;
+    transition:background .15s;
+  }
+  .settings-item:hover{background:rgba(255,255,255,.12);}
 
   .help-body p{
     margin:0 0 12px;
@@ -198,26 +235,6 @@
     font-size:13px;
     color:#5a5646;
   }
-  .notes-toolbar{
-    display:flex;
-    gap:8px;
-    margin-left:auto;
-    flex-wrap:wrap;
-  }
-  .notes-toolbar button{
-    appearance:none;
-    border:1px solid var(--line);
-    background:var(--card-bg);
-    color:var(--ink);
-    padding:6px 12px;
-    border-radius:4px;
-    font-size:12px;
-    font-weight:600;
-    cursor:pointer;
-    transition:background .15s;
-  }
-  .notes-toolbar button:hover{background:#efece0;}
-
   .notes-extra{
     display:flex;
     align-items:center;
@@ -730,14 +747,22 @@
       <div class="mark" id="brandMark">けもケット ブース一覧</div>
       <div class="sub" id="brandSub">サークル配置ビューア</div>
     </div>
-    <div class="lang-switch" id="langSwitch">
-      <button type="button" data-lang="ko">KO</button>
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="jp">JP</button>
-    </div>
-    <button type="button" class="help-btn" id="helpBtn"></button>
     <div class="search-box">
-      <input id="searchInput" type="text" placeholder="サークル名 / 代表者名 / 配置番号 검색">
+      <input id="searchInput" type="text" placeholder="サークル名 / 代表者名 / 配置番号 検索">
+    </div>
+    <div class="settings-wrap" id="settingsWrap">
+      <button type="button" class="settings-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
+      <div class="settings-menu" id="settingsMenu">
+        <div class="lang-switch" id="langSwitch">
+          <button type="button" data-lang="ko">KO</button>
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="jp">JP</button>
+        </div>
+        <button type="button" class="settings-item" id="helpBtn"></button>
+        <button type="button" class="settings-item" id="exportNotesBtn"></button>
+        <button type="button" class="settings-item" id="importNotesBtn"></button>
+        <input type="file" id="importNotesInput" accept="application/json" style="display:none;">
+      </div>
     </div>
   </div>
   <nav class="rows" id="rowNav"></nav>
@@ -747,11 +772,6 @@
   <div class="row-heading">
     <div class="big-letter" id="currentLetter">A</div>
     <div class="count" id="currentCount"></div>
-    <div class="notes-toolbar" id="notesToolbar" style="display:none;">
-      <button type="button" id="exportNotesBtn"></button>
-      <button type="button" id="importNotesBtn"></button>
-      <input type="file" id="importNotesInput" accept="application/json" style="display:none;">
-    </div>
   </div>
   <div class="notes-extra" id="notesExtra" style="display:none;">
     <div class="visit-filter" id="visitFilter">
@@ -807,7 +827,7 @@ const I18N = {
       "자동 번역 및 개발에 AI를 사용하여 내용에 오류가 있을 수 있습니다.",
       "자세한 내용은 {link} 을 참고해주세요",
       "모든 내용은 단말에만 저장되며, 단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
-      "메모(📝) 탭에서 지금까지 작성한 메모를 파일로 내보내거나, 내보낸 파일로 메모를 복원(가져오기)할 수 있습니다.",
+      "메모(📝) 탭에서 지금까지 작성한 메모, 방문 예정/완료 상태, 예산을 파일로 내보내거나, 내보낸 파일로 복원(가져오기)할 수 있습니다.",
       "언어는 한국어, 영어, 일본어가 지원됩니다.",
       "인터넷 연결이 좋지 않을 시, 작가의 프로필 사진이 보이지 않을 수 있습니다.",
       "제작 : @Chung_Hwani",
@@ -840,12 +860,12 @@ const I18N = {
     delete: "삭제",
     savedStatus: "저장됨",
     deletedStatus: "삭제됨",
-    exportNotesBtn: "⬇️ 메모 내보내기",
-    importNotesBtn: "⬆️ 메모 가져오기",
-    importConfirm: "가져오기를 하면 기존 메모와 병합됩니다. 계속할까요?",
-    importSuccess: "메모 {n}개를 가져왔습니다.",
-    importFail: "메모 파일을 불러오지 못했습니다. 파일 형식을 확인해주세요.",
-    exportEmpty: "내보낼 메모가 없습니다.",
+    exportNotesBtn: "⬇️ 데이터 내보내기",
+    importNotesBtn: "⬆️ 데이터 가져오기",
+    importConfirm: "가져오기를 하면 기존 메모/방문 상태/예산과 병합됩니다. 계속할까요?",
+    importSuccess: "메모 {n}개, 방문 상태 {v}개, 예산 {b}개를 가져왔습니다.",
+    importFail: "파일을 불러오지 못했습니다. 파일 형식을 확인해주세요.",
+    exportEmpty: "내보낼 데이터가 없습니다.",
   },
   en: {
     brandMark: "Kemoket Booth List",
@@ -859,7 +879,7 @@ const I18N = {
       "AI was used for automatic translation and development, so there may be errors in the content.",
       "For more details, please refer to {link}",
       "All data is stored only on your device — if you clear your browser data, anything you've written may be lost.",
-      "In the Notes (📝) tab, you can export the notes you've written so far to a file, or restore them by importing that file.",
+      "In the Notes (📝) tab, you can export the notes, visit statuses, and budgets you've entered so far to a file, or restore them by importing that file.",
       "Korean, English, and Japanese are supported.",
       "If your internet connection is poor, artist profile photos may not display.",
       "Made by: @Chung_Hwani",
@@ -892,12 +912,12 @@ const I18N = {
     delete: "Delete",
     savedStatus: "Saved",
     deletedStatus: "Deleted",
-    exportNotesBtn: "⬇️ Export Notes",
-    importNotesBtn: "⬆️ Import Notes",
-    importConfirm: "Importing will merge with your existing notes. Continue?",
-    importSuccess: "Imported {n} notes.",
-    importFail: "Failed to import the notes file. Please check the file format.",
-    exportEmpty: "There are no notes to export.",
+    exportNotesBtn: "⬇️ Export Data",
+    importNotesBtn: "⬆️ Import Data",
+    importConfirm: "Importing will merge with your existing notes/visit status/budget. Continue?",
+    importSuccess: "Imported {n} notes, {v} visit statuses, {b} budgets.",
+    importFail: "Failed to import the file. Please check the file format.",
+    exportEmpty: "There is no data to export.",
   },
   jp: {
     brandMark: "けもケット ブース一覧",
@@ -911,7 +931,7 @@ const I18N = {
       "自動翻訳および開発にAIを使用しているため、内容に誤りがある場合があります。",
       "詳細は {link} をご参照ください。",
       "すべての内容は端末にのみ保存され、端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
-      "メモ（📝）タブから、これまで書いたメモをファイルにエクスポートしたり、そのファイルからメモを復元（インポート）したりできます。",
+      "メモ（📝）タブから、これまで書いたメモ・訪問予定/済みの状態・予算をファイルにエクスポートしたり、そのファイルから復元（インポート）したりできます。",
       "言語は韓国語・英語・日本語に対応しています。",
       "インターネット接続が不安定な場合、作家のプロフィール写真が表示されないことがあります。",
       "制作：@Chung_Hwani",
@@ -944,17 +964,17 @@ const I18N = {
     delete: "削除",
     savedStatus: "保存済み",
     deletedStatus: "削除済み",
-    exportNotesBtn: "⬇️ メモをエクスポート",
-    importNotesBtn: "⬆️ メモをインポート",
-    importConfirm: "インポートすると既存のメモと統合されます。続行しますか？",
-    importSuccess: "メモを{n}件インポートしました。",
-    importFail: "メモファイルを読み込めませんでした。ファイル形式をご確認ください。",
-    exportEmpty: "エクスポートするメモがありません。",
+    exportNotesBtn: "⬇️ データをエクスポート",
+    importNotesBtn: "⬆️ データをインポート",
+    importConfirm: "インポートすると既存のメモ・訪問状態・予算と統合されます。続行しますか？",
+    importSuccess: "メモ{n}件、訪問状態{v}件、予算{b}件をインポートしました。",
+    importFail: "ファイルを読み込めませんでした。ファイル形式をご確認ください。",
+    exportEmpty: "エクスポートするデータがありません。",
   },
 };
 const LANG_KEY = "kemoket-lang";
 let currentLang = localStorage.getItem(LANG_KEY);
-if(!I18N[currentLang]) currentLang = "ko";
+if(!I18N[currentLang]) currentLang = "en";
 
 function t(key, vars){
   let str = (I18N[currentLang] && I18N[currentLang][key]) || I18N.ko[key] || key;
@@ -997,6 +1017,56 @@ document.getElementById("langSwitch").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-lang]");
   if(!btn) return;
   setLang(btn.dataset.lang);
+  closeSettingsMenu();
+});
+
+/* ---------- 설정 메뉴(톱니바퀴) ----------
+   position:fixed로 띄우고 버튼 위치를 기준으로 화면 안쪽에 들어오도록 좌표를 계산함
+   (해상도가 좁아 버튼이 화면 가장자리에 가까울 때도 메뉴가 화면 밖으로 잘리지 않게 함).
+------------------------------------------------- */
+function positionSettingsMenu(){
+  const btn = document.getElementById("settingsBtn");
+  const menu = document.getElementById("settingsMenu");
+  const margin = 10;
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
+  const btnRect = btn.getBoundingClientRect();
+  const menuWidth = menu.offsetWidth;
+  const menuHeight = menu.offsetHeight;
+
+  let left = btnRect.right - menuWidth;
+  left = Math.max(margin, Math.min(left, viewportWidth - menuWidth - margin));
+
+  let top = btnRect.bottom + 8;
+  if(top + menuHeight + margin > viewportHeight){
+    top = Math.max(margin, btnRect.top - menuHeight - 8);
+  }
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function closeSettingsMenu(){
+  document.getElementById("settingsMenu").classList.remove("open");
+}
+
+document.getElementById("settingsBtn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById("settingsMenu");
+  const willOpen = !menu.classList.contains("open");
+  if(willOpen){
+    menu.classList.add("open");
+    positionSettingsMenu();
+  } else {
+    closeSettingsMenu();
+  }
+});
+document.getElementById("settingsMenu").addEventListener("click", (e) => e.stopPropagation());
+document.addEventListener("click", () => closeSettingsMenu());
+window.addEventListener("resize", () => {
+  if(document.getElementById("settingsMenu").classList.contains("open")){
+    positionSettingsMenu();
+  }
 });
 
 /* ---------- 부스별 메모 ----------
@@ -1137,8 +1207,7 @@ function updateBudgetTotalDisplay(){
    { "A-01": "메모 내용", ... } 형태의 notes 객체를 JSON 파일로 저장/복원함.
 ------------------------------------------------- */
 function exportNotes(){
-  const ids = Object.keys(notes);
-  if(!ids.length){
+  if(!Object.keys(notes).length && !Object.keys(visitStatus).length && !Object.keys(budgets).length){
     alert(t("exportEmpty"));
     return;
   }
@@ -1146,6 +1215,8 @@ function exportNotes(){
     app: "kemoket-notes",
     exportedAt: new Date().toISOString(),
     notes,
+    visitStatus,
+    budgets,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1164,24 +1235,44 @@ function importNotesFromFile(file){
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
-      const incoming = (parsed && typeof parsed === "object" && parsed.notes && typeof parsed.notes === "object")
-        ? parsed.notes
-        : parsed;
-      if(!incoming || typeof incoming !== "object" || Array.isArray(incoming)){
+      const isWrapped = !!(parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        && (parsed.notes || parsed.visitStatus || parsed.budgets));
+      // 예전 형식(메모만 담긴 파일) 호환: 감싸져 있지 않으면 전체를 메모 객체로 취급
+      const incomingNotes = isWrapped ? (parsed.notes || {}) : parsed;
+      const incomingVisit = isWrapped ? (parsed.visitStatus || {}) : {};
+      const incomingBudgets = isWrapped ? (parsed.budgets || {}) : {};
+      if(!incomingNotes || typeof incomingNotes !== "object" || Array.isArray(incomingNotes)){
         throw new Error("invalid format");
       }
       if(!confirm(t("importConfirm"))) return;
-      let count = 0;
-      Object.keys(incoming).forEach(id => {
-        if(typeof incoming[id] === "string" && incoming[id].trim()){
-          notes[id] = incoming[id].trim().slice(0, MAX_NOTE_LENGTH);
-          count++;
+
+      let noteCount = 0, visitCount = 0, budgetCount = 0;
+      Object.keys(incomingNotes).forEach(id => {
+        if(typeof incomingNotes[id] === "string" && incomingNotes[id].trim()){
+          notes[id] = incomingNotes[id].trim().slice(0, MAX_NOTE_LENGTH);
+          noteCount++;
         }
       });
+      Object.keys(incomingVisit).forEach(id => {
+        if(incomingVisit[id] === "planned" || incomingVisit[id] === "visited"){
+          visitStatus[id] = incomingVisit[id];
+          visitCount++;
+        }
+      });
+      Object.keys(incomingBudgets).forEach(id => {
+        const n = Math.max(0, Math.floor(Number(incomingBudgets[id]) || 0));
+        if(n > 0){
+          budgets[id] = n;
+          budgetCount++;
+        }
+      });
+
       saveNotes();
+      saveVisitStatus();
+      saveBudgets();
       renderNav();
       renderGrid();
-      alert(t("importSuccess", { n: count }));
+      alert(t("importSuccess", { n: noteCount, v: visitCount, b: budgetCount }));
     } catch {
       alert(t("importFail"));
     }
@@ -1460,7 +1551,6 @@ function renderGrid(){
     document.getElementById("currentCount").textContent = currentRow === "MAP1"
       ? `展示室A・B — ${t("mapHint")}`
       : `展示室C・D — ${t("mapHint")}`;
-    document.getElementById("notesToolbar").style.display = "none";
     document.getElementById("notesExtra").style.display = "none";
     renderMapView(currentRow);
     return;
@@ -1471,7 +1561,6 @@ function renderGrid(){
   const isNotesView = currentRow === "NOTES";
   const isAllView = currentRow === "ALL";
   document.getElementById("currentLetter").textContent = isNotesView ? "📝" : isAllView ? "📋" : currentRow;
-  document.getElementById("notesToolbar").style.display = isNotesView ? "flex" : "none";
   document.getElementById("notesExtra").style.display = isNotesView ? "flex" : "none";
   updateBudgetTotalDisplay();
 
@@ -1888,10 +1977,17 @@ function openHelpModal(){
   backdrop.classList.add("open");
 }
 
-document.getElementById("helpBtn").addEventListener("click", openHelpModal);
+document.getElementById("helpBtn").addEventListener("click", () => {
+  closeSettingsMenu();
+  openHelpModal();
+});
 
-document.getElementById("exportNotesBtn").addEventListener("click", exportNotes);
+document.getElementById("exportNotesBtn").addEventListener("click", () => {
+  closeSettingsMenu();
+  exportNotes();
+});
 document.getElementById("importNotesBtn").addEventListener("click", () => {
+  closeSettingsMenu();
   document.getElementById("importNotesInput").click();
 });
 document.getElementById("importNotesInput").addEventListener("change", (e) => {
