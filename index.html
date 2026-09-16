@@ -490,6 +490,14 @@
     object-fit:cover;
     background:var(--panel-2);
   }
+  .pop-head img.avatar-link{
+    cursor:pointer;
+    outline-offset:2px;
+    transition:outline .12s;
+  }
+  .pop-head img.avatar-link:hover{
+    outline:2px solid var(--moss-light);
+  }
   .pop-head .names{font-size:13px;}
   .pop-head .c-name{font-weight:700;}
   .pop-head .r-name{color:var(--moss-light);font-size:11px;}
@@ -1351,6 +1359,12 @@ function makePopover(booth){
   if(booth.twitter){
     img.src = localAvatarUrl(booth.twitter);
     img.onerror = () => { img.style.visibility = "hidden"; };
+    img.classList.add("avatar-link");
+    img.title = t("openProfile");
+    img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.open(`https://x.com/${booth.twitter}`, "_blank", "noopener");
+    });
   } else {
     img.style.visibility = "hidden";
   }
@@ -1834,6 +1848,12 @@ function openBoothModal(boothId){
   if(booth.twitter){
     img.src = localAvatarUrl(booth.twitter);
     img.onerror = () => { img.style.visibility = "hidden"; };
+    img.classList.add("avatar-link");
+    img.title = t("openProfile");
+    img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.open(`https://x.com/${booth.twitter}`, "_blank", "noopener");
+    });
   } else {
     img.style.visibility = "hidden";
   }
