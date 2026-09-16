@@ -834,7 +834,7 @@ const I18N = {
     filterPlanned: "🟡 방문 예정",
     filterVisited: "🟢 방문 완료",
     budgetTotal: "총 예산: {amount}",
-    memoLabel: "내 메모 (이 브라우저에만 저장됨)",
+    memoLabel: "내 메모",
     memoPlaceholder: "예시 : 동인지 한권, 아크릴 키링 하나",
     save: "저장",
     delete: "삭제",
@@ -886,7 +886,7 @@ const I18N = {
     filterPlanned: "🟡 Plan to Visit",
     filterVisited: "🟢 Visited",
     budgetTotal: "Total budget: {amount}",
-    memoLabel: "My Notes (saved only in this browser)",
+    memoLabel: "My Notes",
     memoPlaceholder: "e.g. one doujinshi, one acrylic keychain",
     save: "Save",
     delete: "Delete",
@@ -938,7 +938,7 @@ const I18N = {
     filterPlanned: "🟡 訪問予定",
     filterVisited: "🟢 訪問済み",
     budgetTotal: "総予算：{amount}",
-    memoLabel: "マイメモ（このブラウザにのみ保存されます）",
+    memoLabel: "マイメモ",
     memoPlaceholder: "例：同人誌1冊、アクリルキーホルダー1個",
     save: "保存",
     delete: "削除",
@@ -1532,16 +1532,14 @@ function renderGrid(){
 
     const avatarWrap = document.createElement("div");
     avatarWrap.className = "avatar-wrap";
-    // 메모 탭에서는 프로필 사진을 클릭하면 팝오버를 열지 않고 바로 X 프로필로 이동
-    if(isNotesView && booth.twitter){
+    if(booth.twitter){
+      // 프로필 사진을 클릭하면 팝오버를 열지 않고 바로 X 프로필로 이동 (모든 탭 공통)
       avatarWrap.classList.add("avatar-link");
       avatarWrap.title = t("openProfile");
       avatarWrap.addEventListener("click", (e) => {
         e.stopPropagation();
         window.open(`https://x.com/${booth.twitter}`, "_blank", "noopener");
       });
-    }
-    if(booth.twitter){
       const img = document.createElement("img");
       img.loading = "lazy";
       img.src = localAvatarUrl(booth.twitter);
