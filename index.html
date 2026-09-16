@@ -218,6 +218,47 @@
   }
   .notes-toolbar button:hover{background:#efece0;}
 
+  .notes-extra{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:-8px 0 18px;
+  }
+  .visit-filter{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .visit-filter button{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--card-bg);
+    color:var(--ink);
+    padding:5px 10px;
+    border-radius:4px;
+    font-size:11.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .visit-filter button:hover{background:#efece0;}
+  .visit-filter button.active{
+    background:var(--panel);
+    border-color:var(--panel);
+    color:var(--paper);
+  }
+  .budget-total{
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    background:var(--card-bg);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 12px;
+  }
+
   .grid{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(128px,1fr));
@@ -256,6 +297,13 @@
     display:flex;
     align-items:center;
     justify-content:center;
+  }
+  .avatar-wrap.avatar-link{
+    outline-offset:2px;
+    transition:outline .12s;
+  }
+  .avatar-wrap.avatar-link:hover{
+    outline:2px solid var(--moss);
   }
   .avatar-wrap img{
     width:100%;
@@ -310,6 +358,18 @@
     display:none;
   }
   .booth.has-note .memo-flag{display:block;}
+
+  /* 방문 예정/완료 부스 표시 (메모 표시보다 우선 적용) */
+  .booth.visit-planned{
+    border-color:#c99a1f;
+    box-shadow:0 0 0 1px #c99a1f inset;
+    background:#fff6d1;
+  }
+  .booth.visit-visited{
+    border-color:#3f7a33;
+    box-shadow:0 0 0 1px #3f7a33 inset;
+    background:#e3f3df;
+  }
 
   /* 팝오버 안의 메모 입력 영역 */
   .memo-box{
@@ -430,6 +490,73 @@
     border-radius:5px;
   }
   .pop-links a:hover{background:rgba(255,255,255,.1);}
+
+  /* 방문 예정/완료 표시 버튼 */
+  .visit-box{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .visit-box button{
+    flex:1;
+    font-size:11.5px;
+    font-weight:600;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.08);
+    color:var(--paper);
+    cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .visit-box button.planned.active{
+    background:#e0b12c;
+    border-color:#e0b12c;
+    color:#241b06;
+  }
+  .visit-box button.visited.active{
+    background:#4a8f3c;
+    border-color:#4a8f3c;
+    color:#eafce6;
+  }
+
+  /* 부스별 예산 입력 */
+  .budget-box{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid rgba(255,255,255,.18);
+  }
+  .budget-box label{
+    display:block;
+    font-size:11px;
+    color:var(--moss-light);
+    margin-bottom:4px;
+  }
+  .budget-input-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:6px;
+    padding:2px 8px;
+  }
+  .budget-input-row .yen{
+    font-size:12px;
+    color:var(--moss-light);
+  }
+  .budget-input-row input{
+    flex:1;
+    min-width:0;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--paper);
+    font-size:12px;
+    font-family:inherit;
+    padding:6px 0;
+  }
+
   .tweet-slot{
     margin-top:2px;
     min-height:20px;
@@ -514,6 +641,18 @@
     background:#c9973b;
     border-color:#c9973b;
     color:#241b06;
+    font-weight:700;
+  }
+  .map-cell.visit-planned{
+    background:#e0b12c;
+    border-color:#e0b12c;
+    color:#241b06;
+    font-weight:700;
+  }
+  .map-cell.visit-visited{
+    background:#4a8f3c;
+    border-color:#4a8f3c;
+    color:#eafce6;
     font-weight:700;
   }
   .map-legend{
@@ -614,6 +753,14 @@
       <input type="file" id="importNotesInput" accept="application/json" style="display:none;">
     </div>
   </div>
+  <div class="notes-extra" id="notesExtra" style="display:none;">
+    <div class="visit-filter" id="visitFilter">
+      <button type="button" data-filter="all"></button>
+      <button type="button" data-filter="planned"></button>
+      <button type="button" data-filter="visited"></button>
+    </div>
+    <div class="budget-total" id="budgetTotal"></div>
+  </div>
   <div class="grid" id="grid"></div>
   <div class="map-grid" id="mapGrid" style="display:none;"></div>
   <div class="empty-state" id="emptyState" style="display:none;">검색 결과가 없어요.</div>
@@ -642,6 +789,7 @@ BOOTHS.forEach(b => { if(byRow[b.block]) byRow[b.block].push(b); });
 let currentRow = ALL_ROWS.find(r => byRow[r].length > 0) || "A";
 let currentQuery = "";
 let widgetsLoaded = false;
+let notesVisitFilter = "all"; // "all" | "planned" | "visited" — 메모 탭에서 방문 상태로 필터링
 
 /* ---------- 다국어(i18n) ----------
    서클명/대표자명은 원본 그대로 두고, 그 외 UI 텍스트만 언어별로 관리함.
@@ -679,6 +827,13 @@ const I18N = {
     noTwitterHint: "등록된 X 계정이 없습니다.",
     tweetLoadFail: "트윗을 불러오지 못했어요.",
     openProfile: "X 프로필 열기",
+    visitPlanned: "🟡 방문 예정",
+    visitVisited: "🟢 방문 완료",
+    budgetLabel: "예산 (엔)",
+    filterAll: "전체",
+    filterPlanned: "🟡 방문 예정",
+    filterVisited: "🟢 방문 완료",
+    budgetTotal: "총 예산: {amount}",
     memoLabel: "내 메모 (이 브라우저에만 저장됨)",
     memoPlaceholder: "예시 : 동인지 한권, 아크릴 키링 하나",
     save: "저장",
@@ -724,6 +879,13 @@ const I18N = {
     noTwitterHint: "No X account registered.",
     tweetLoadFail: "Failed to load tweet.",
     openProfile: "Open X Profile",
+    visitPlanned: "🟡 Plan to Visit",
+    visitVisited: "🟢 Visited",
+    budgetLabel: "Budget (JPY)",
+    filterAll: "All",
+    filterPlanned: "🟡 Plan to Visit",
+    filterVisited: "🟢 Visited",
+    budgetTotal: "Total budget: {amount}",
     memoLabel: "My Notes (saved only in this browser)",
     memoPlaceholder: "e.g. one doujinshi, one acrylic keychain",
     save: "Save",
@@ -769,6 +931,13 @@ const I18N = {
     noTwitterHint: "登録されたXアカウントがありません。",
     tweetLoadFail: "ツイートを読み込めませんでした。",
     openProfile: "Xプロフィールを開く",
+    visitPlanned: "🟡 訪問予定",
+    visitVisited: "🟢 訪問済み",
+    budgetLabel: "予算（円）",
+    filterAll: "すべて",
+    filterPlanned: "🟡 訪問予定",
+    filterVisited: "🟢 訪問済み",
+    budgetTotal: "総予算：{amount}",
     memoLabel: "マイメモ（このブラウザにのみ保存されます）",
     memoPlaceholder: "例：同人誌1冊、アクリルキーホルダー1個",
     save: "保存",
@@ -804,6 +973,10 @@ function applyStaticTexts(){
   document.getElementById("helpBtn").textContent = t("helpBtn");
   document.getElementById("exportNotesBtn").textContent = t("exportNotesBtn");
   document.getElementById("importNotesBtn").textContent = t("importNotesBtn");
+  document.querySelector('#visitFilter button[data-filter="all"]').textContent = t("filterAll");
+  document.querySelector('#visitFilter button[data-filter="planned"]').textContent = t("filterPlanned");
+  document.querySelector('#visitFilter button[data-filter="visited"]').textContent = t("filterVisited");
+  updateBudgetTotalDisplay();
   document.getElementById("siteFooter").innerHTML =
     `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a>`;
   document.querySelectorAll("#langSwitch button").forEach(btn => {
@@ -864,6 +1037,100 @@ function setNote(boothId, text){
     delete notes[boothId];
   }
   saveNotes();
+}
+
+/* ---------- 방문 예정/완료 표시 ----------
+   { "A-01": "planned" | "visited", ... } 형태로 브라우저(localStorage)에만 저장됨.
+------------------------------------------------ */
+const VISIT_KEY = "kemoket-visit-status";
+
+function loadVisitStatus(){
+  try {
+    return JSON.parse(localStorage.getItem(VISIT_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveVisitStatus(){
+  try {
+    localStorage.setItem(VISIT_KEY, JSON.stringify(visitStatus));
+  } catch {
+    // 저장 실패(용량 초과 등)해도 사이트 동작에는 지장 없도록 무시
+  }
+}
+
+let visitStatus = loadVisitStatus();
+
+function getVisitStatus(boothId){
+  return visitStatus[boothId] || null;
+}
+
+function setVisitStatus(boothId, status){
+  if(status){
+    visitStatus[boothId] = status;
+  } else {
+    delete visitStatus[boothId];
+  }
+  saveVisitStatus();
+}
+
+function updateVisitVisuals(boothId){
+  const status = getVisitStatus(boothId);
+  document.querySelectorAll(`[data-booth-id="${boothId}"]`).forEach(el => {
+    el.classList.toggle("visit-planned", status === "planned");
+    el.classList.toggle("visit-visited", status === "visited");
+  });
+}
+
+/* ---------- 부스별 예산 ----------
+   { "A-01": 3000, ... } 형태로 브라우저(localStorage)에만 저장됨. 단위는 엔.
+------------------------------------------------ */
+const BUDGET_KEY = "kemoket-budget";
+
+function loadBudgets(){
+  try {
+    return JSON.parse(localStorage.getItem(BUDGET_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveBudgets(){
+  try {
+    localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets));
+  } catch {
+    // 저장 실패(용량 초과 등)해도 사이트 동작에는 지장 없도록 무시
+  }
+}
+
+let budgets = loadBudgets();
+
+function getBudget(boothId){
+  return budgets[boothId] || 0;
+}
+
+function setBudget(boothId, amount){
+  const n = Math.max(0, Math.floor(Number(amount) || 0));
+  if(n > 0){
+    budgets[boothId] = n;
+  } else {
+    delete budgets[boothId];
+  }
+  saveBudgets();
+}
+
+function getTotalBudget(){
+  return Object.values(budgets).reduce((sum, v) => sum + v, 0);
+}
+
+function formatYen(amount){
+  return `¥${amount.toLocaleString()}`;
+}
+
+function updateBudgetTotalDisplay(){
+  const el = document.getElementById("budgetTotal");
+  if(el) el.textContent = t("budgetTotal", { amount: formatYen(getTotalBudget()) });
 }
 
 /* ---------- 메모 내보내기/가져오기 ----------
@@ -1020,6 +1287,52 @@ function makePopover(booth){
   }
   pop.appendChild(links);
 
+  const visitBox = document.createElement("div");
+  visitBox.className = "visit-box";
+  visitBox.innerHTML = `
+    <button type="button" class="visit-btn planned">${escapeHtml(t("visitPlanned"))}</button>
+    <button type="button" class="visit-btn visited">${escapeHtml(t("visitVisited"))}</button>
+  `;
+  const plannedBtn = visitBox.querySelector(".planned");
+  const visitedBtn = visitBox.querySelector(".visited");
+  const syncVisitButtons = () => {
+    const status = getVisitStatus(booth.id);
+    plannedBtn.classList.toggle("active", status === "planned");
+    visitedBtn.classList.toggle("active", status === "visited");
+  };
+  syncVisitButtons();
+
+  // 팝오버 안 요소 클릭이 카드 밖 클릭으로 오인되어 닫히지 않도록 막음
+  visitBox.addEventListener("click", (e) => e.stopPropagation());
+  plannedBtn.addEventListener("click", () => {
+    setVisitStatus(booth.id, getVisitStatus(booth.id) === "planned" ? null : "planned");
+    updateVisitVisuals(booth.id);
+    syncVisitButtons();
+  });
+  visitedBtn.addEventListener("click", () => {
+    setVisitStatus(booth.id, getVisitStatus(booth.id) === "visited" ? null : "visited");
+    updateVisitVisuals(booth.id);
+    syncVisitButtons();
+  });
+  pop.appendChild(visitBox);
+
+  const budgetBox = document.createElement("div");
+  budgetBox.className = "budget-box";
+  budgetBox.innerHTML = `
+    <label>${escapeHtml(t("budgetLabel"))}</label>
+    <div class="budget-input-row">
+      <span class="yen">¥</span>
+      <input type="number" min="0" step="100" inputmode="numeric" value="${getBudget(booth.id) || ""}" placeholder="0">
+    </div>
+  `;
+  const budgetInput = budgetBox.querySelector("input");
+  budgetBox.addEventListener("click", (e) => e.stopPropagation());
+  budgetInput.addEventListener("input", () => {
+    setBudget(booth.id, budgetInput.value);
+    updateBudgetTotalDisplay();
+  });
+  pop.appendChild(budgetBox);
+
   const memoBox = document.createElement("div");
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
@@ -1148,6 +1461,7 @@ function renderGrid(){
       ? `展示室A・B — ${t("mapHint")}`
       : `展示室C・D — ${t("mapHint")}`;
     document.getElementById("notesToolbar").style.display = "none";
+    document.getElementById("notesExtra").style.display = "none";
     renderMapView(currentRow);
     return;
   }
@@ -1158,11 +1472,19 @@ function renderGrid(){
   const isAllView = currentRow === "ALL";
   document.getElementById("currentLetter").textContent = isNotesView ? "📝" : isAllView ? "📋" : currentRow;
   document.getElementById("notesToolbar").style.display = isNotesView ? "flex" : "none";
+  document.getElementById("notesExtra").style.display = isNotesView ? "flex" : "none";
+  updateBudgetTotalDisplay();
 
   let list;
   if(isNotesView){
     const noteIds = new Set(Object.keys(notes));
     list = BOOTHS.filter(b => noteIds.has(b.id));
+    if(notesVisitFilter !== "all"){
+      list = list.filter(b => getVisitStatus(b.id) === notesVisitFilter);
+    }
+    document.querySelectorAll("#visitFilter button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.filter === notesVisitFilter);
+    });
   } else if(isAllView){
     list = BOOTHS;
   } else {
@@ -1189,7 +1511,9 @@ function renderGrid(){
 
   list.forEach(booth => {
     const card = document.createElement("div");
-    card.className = "booth" + (booth.twitter ? "" : " no-tw") + (getNote(booth.id) ? " has-note" : "");
+    const visitCls = getVisitStatus(booth.id) === "planned" ? " visit-planned"
+      : getVisitStatus(booth.id) === "visited" ? " visit-visited" : "";
+    card.className = "booth" + (booth.twitter ? "" : " no-tw") + (getNote(booth.id) ? " has-note" : "") + visitCls;
     card.dataset.boothId = booth.id;
 
     const memoFlag = document.createElement("div");
@@ -1208,6 +1532,15 @@ function renderGrid(){
 
     const avatarWrap = document.createElement("div");
     avatarWrap.className = "avatar-wrap";
+    // 메모 탭에서는 프로필 사진을 클릭하면 팝오버를 열지 않고 바로 X 프로필로 이동
+    if(isNotesView && booth.twitter){
+      avatarWrap.classList.add("avatar-link");
+      avatarWrap.title = t("openProfile");
+      avatarWrap.addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.open(`https://x.com/${booth.twitter}`, "_blank", "noopener");
+      });
+    }
     if(booth.twitter){
       const img = document.createElement("img");
       img.loading = "lazy";
@@ -1245,6 +1578,8 @@ function renderGrid(){
 
     let timelineLoaded = false;
     const open = () => {
+      // 새 부스 팝오버를 열 때는 열려 있던 다른 팝오버를 먼저 닫음(동시에 하나만 열림).
+      closeAllPopovers(card);
       card.classList.add("show-pop");
       positionPopover(card, pop);
       if(booth.twitter && !timelineLoaded){
@@ -1271,12 +1606,19 @@ function renderGrid(){
   });
 }
 
-document.addEventListener("click", () => {
+// 열려 있는 모든 부스 팝오버를 닫음. exceptCard를 지정하면 해당 카드는 건너뜀
+// (새 팝오버를 열기 직전에 다른 팝오버들만 닫을 때 사용).
+function closeAllPopovers(exceptCard){
   document.querySelectorAll(".booth.show-pop").forEach(el => {
+    if(el === exceptCard) return;
     el.classList.remove("show-pop");
     const textarea = el.querySelector(".memo-box textarea");
     if(textarea) textarea.value = getNote(el.dataset.boothId);
   });
+}
+
+document.addEventListener("click", () => {
+  closeAllPopovers();
 });
 
 // 스크롤로 부스 카드가 화면 밖으로 벗어나면 팝오버를 자동으로 닫음(메모 초안은 유지).
@@ -1330,7 +1672,10 @@ function buildPairedColumn(list){
     }
     const num = booth.id.split("-")[1];
     const cell = document.createElement("div");
-    cell.className = "map-cell" + (getNote(booth.id) ? " has-note" : "");
+    const visitCls = getVisitStatus(booth.id) === "planned" ? " visit-planned"
+      : getVisitStatus(booth.id) === "visited" ? " visit-visited" : "";
+    cell.className = "map-cell" + (getNote(booth.id) ? " has-note" : "") + visitCls;
+    cell.dataset.boothId = booth.id;
     cell.textContent = num;
     cell.title = `${booth.id} ${booth.name}`;
     cell.addEventListener("click", () => openBoothModal(booth.id));
@@ -1430,6 +1775,52 @@ function openBoothModal(boothId){
   }
   content.appendChild(links);
 
+  const visitBox = document.createElement("div");
+  visitBox.className = "visit-box";
+  visitBox.innerHTML = `
+    <button type="button" class="visit-btn planned">${escapeHtml(t("visitPlanned"))}</button>
+    <button type="button" class="visit-btn visited">${escapeHtml(t("visitVisited"))}</button>
+  `;
+  const plannedBtn = visitBox.querySelector(".planned");
+  const visitedBtn = visitBox.querySelector(".visited");
+  const syncVisitButtons = () => {
+    const status = getVisitStatus(booth.id);
+    plannedBtn.classList.toggle("active", status === "planned");
+    visitedBtn.classList.toggle("active", status === "visited");
+  };
+  syncVisitButtons();
+  const refreshVisitViews = () => {
+    updateVisitVisuals(booth.id);
+    if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
+  };
+  plannedBtn.addEventListener("click", () => {
+    setVisitStatus(booth.id, getVisitStatus(booth.id) === "planned" ? null : "planned");
+    refreshVisitViews();
+    syncVisitButtons();
+  });
+  visitedBtn.addEventListener("click", () => {
+    setVisitStatus(booth.id, getVisitStatus(booth.id) === "visited" ? null : "visited");
+    refreshVisitViews();
+    syncVisitButtons();
+  });
+  content.appendChild(visitBox);
+
+  const budgetBox = document.createElement("div");
+  budgetBox.className = "budget-box";
+  budgetBox.innerHTML = `
+    <label>${escapeHtml(t("budgetLabel"))}</label>
+    <div class="budget-input-row">
+      <span class="yen">¥</span>
+      <input type="number" min="0" step="100" inputmode="numeric" value="${getBudget(booth.id) || ""}" placeholder="0">
+    </div>
+  `;
+  const budgetInput = budgetBox.querySelector("input");
+  budgetInput.addEventListener("input", () => {
+    setBudget(booth.id, budgetInput.value);
+    updateBudgetTotalDisplay();
+  });
+  content.appendChild(budgetBox);
+
   const memoBox = document.createElement("div");
   memoBox.className = "memo-box";
   memoBox.innerHTML = `
@@ -1509,6 +1900,13 @@ document.getElementById("importNotesInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if(file) importNotesFromFile(file);
   e.target.value = "";
+});
+
+document.getElementById("visitFilter").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-filter]");
+  if(!btn) return;
+  notesVisitFilter = btn.dataset.filter;
+  renderGrid();
 });
 
 function closeModal(){
