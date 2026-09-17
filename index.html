@@ -6,6 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
   script-src 'self' 'unsafe-inline' https://platform.twitter.com https://cdn.syndication.twimg.com;
+  worker-src 'self';
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https://pbs.twimg.com https://abs.twimg.com https://ton.twimg.com;
   font-src 'self' data:;
@@ -2081,6 +2082,15 @@ document.addEventListener("keydown", (e) => {
 applyStaticTexts();
 renderNav();
 renderGrid();
+
+// 오프라인에서도 사이트를 열람할 수 있도록 서비스 워커 등록
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {
+      // 등록 실패해도(예: 지원 안 하는 브라우저) 사이트 자체 동작에는 지장 없음
+    });
+  });
+}
 </script>
 </body>
 </html>
