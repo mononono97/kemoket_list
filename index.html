@@ -10,8 +10,8 @@
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https://pbs.twimg.com https://abs.twimg.com https://ton.twimg.com;
   font-src 'self' data:;
-  connect-src 'self' https://cdn.syndication.twimg.com https://syndication.twitter.com https://twitter.com https://x.com;
-  frame-src https://platform.twitter.com https://syndication.twitter.com;
+  connect-src 'self' https://cdn.syndication.twimg.com https://syndication.twitter.com https://twitter.com https://x.com https://api.open-meteo.com;
+  frame-src https://platform.twitter.com https://syndication.twitter.com https://www.google.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -735,6 +735,113 @@
   .map-legend .swatch.normal{ background:var(--card-bg); border:1px solid var(--line); }
   .map-legend .swatch.note{ background:var(--clay); }
 
+  /* 행사 안내 */
+  .info-view{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+    max-width:720px;
+  }
+  .info-section h2{
+    font-size:16px;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  .venue-name{
+    font-weight:700;
+    font-size:15px;
+  }
+  .venue-address{
+    color:#5a5646;
+    font-size:12.5px;
+    margin-bottom:12px;
+  }
+  .transit-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  .transit-table tr{
+    border-bottom:1px solid var(--line);
+  }
+  .transit-table tr:last-child{
+    border-bottom:none;
+  }
+  .transit-table td{
+    padding:8px 6px;
+    vertical-align:middle;
+  }
+  .transit-table td.mode{
+    font-size:18px;
+    width:28px;
+    text-align:center;
+  }
+  .transit-table td.time{
+    color:#5a5646;
+    text-align:right;
+    white-space:nowrap;
+  }
+  .info-map-wrap{
+    position:relative;
+    width:100%;
+    padding-top:56%;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .info-map-wrap iframe{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:0;
+  }
+  .info-map-link{
+    display:inline-block;
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--moss);
+  }
+  .weather-cards{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    font-size:13px;
+    color:#5a5646;
+  }
+  .weather-card{
+    flex:1;
+    min-width:100px;
+    background:var(--card-bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .weather-time{
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:4px;
+  }
+  .weather-icon{
+    font-size:30px;
+    line-height:1.2;
+  }
+  .weather-temp{
+    font-size:16px;
+    font-weight:700;
+    color:var(--ink);
+    margin-top:4px;
+  }
+  .weather-hum{
+    font-size:12px;
+    margin-top:2px;
+  }
+  .weather-empty{
+    font-size:13px;
+    color:#5a5646;
+  }
+
   /* 모달 */
   .modal-backdrop{
     display:none;
@@ -830,6 +937,7 @@
   </div>
   <div class="grid" id="grid"></div>
   <div class="map-grid" id="mapGrid" style="display:none;"></div>
+  <div class="info-view" id="infoView" style="display:none;"></div>
   <div class="empty-state" id="emptyState" style="display:none;">검색 결과가 없어요.</div>
 </main>
 
@@ -853,7 +961,22 @@ const byRow = {};
 ALL_ROWS.forEach(r => byRow[r] = []);
 BOOTHS.forEach(b => { if(byRow[b.block]) byRow[b.block].push(b); });
 
-let currentRow = ALL_ROWS.find(r => byRow[r].length > 0) || "A";
+// 새로고침해도 보고 있던 탭(부스 열/전체/메모/배치도)이 유지되도록 저장해둠
+const CURRENT_ROW_KEY = "kemoket-current-row";
+const VALID_ROWS = new Set([...ALL_ROWS, "ALL", "NOTES", "MAP1", "MAP2", "INFO"]);
+let savedRow = null;
+try { savedRow = localStorage.getItem(CURRENT_ROW_KEY); } catch {}
+let currentRow = (savedRow && VALID_ROWS.has(savedRow))
+  ? savedRow
+  : (ALL_ROWS.find(r => byRow[r].length > 0) || "A");
+
+function goToRow(row){
+  currentRow = row;
+  try { localStorage.setItem(CURRENT_ROW_KEY, row); } catch {}
+  renderNav();
+  renderGrid();
+}
+
 let currentQuery = "";
 let widgetsLoaded = false;
 let notesVisitFilter = "all"; // "all" | "planned" | "visited" — 메모 탭에서 방문 상태로 필터링
@@ -872,6 +995,7 @@ const I18N = {
     helpBody: [
       "이 사이트는 케모켓 부스 목록을 쉽게 보기 위해 만든 사이트 입니다.\n자동 번역 및 개발에 AI를 사용하여 내용에 오류가 있을 수 있습니다.\n자세한 내용은 {link} 을 참고해주세요",
       "모든 내용은 단말에만 저장되며,\n단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
+      "온라인 상태로 한 번 접속해두면, 이후 인터넷이 끊겨도 사이트를 계속 열람할 수 있습니다\n(단, 오프라인 중에는 새로운 프로필 사진이나 최신 정보는 반영되지 않습니다)",
       "검색창에서는 현재 탭에 위치한 작가를 부스 이름,\n작가 이름으로 필터링 가능합니다(전체 탭에서는 전체 검색)",
       "메모(📝) 탭에서 내가 메모해둔 작가들을 확인 가능하며,\n방문 예정 혹은 방문 완료 기준으로 필터링 할 수 있습니다.\n지금까지 작성한 메모, 방문 예정/완료 상태, 예산을 파일로 내보내거나,\n내보낸 파일로 복원(가져오기)할 수 있습니다.",
       "배치도에서는 방문 예정인 부스는 노란색,\n방문 완료한 부스는 초록색으로 표시됩니다.",
@@ -901,6 +1025,15 @@ const I18N = {
     filterPlanned: "🟡 방문 예정",
     filterVisited: "🟢 방문 완료",
     budgetTotal: "총 예산: {amount}",
+    infoBtn: "🎪 행사 안내",
+    infoHint: "행사장 약도 · 교통편 · 날씨 정보",
+    infoTransitTitle: "🚃 오시는 길",
+    infoMapTitle: "🗺️ 행사장 약도",
+    infoOpenMap: "지도 크게 보기",
+    infoWeatherTitle: "☀️ 행사 당일 날씨",
+    infoWeatherLoading: "날씨 정보를 불러오는 중...",
+    infoWeatherUnavailable: "{date} 날씨 예보는 아직 제공되지 않습니다 (행사 약 2주 전부터 표시됩니다).",
+    infoWeatherError: "날씨 정보를 불러오지 못했습니다.",
     memoLabel: "내 메모",
     memoPlaceholder: "예시 : 동인지 한권, 아크릴 키링 하나",
     save: "저장",
@@ -924,6 +1057,7 @@ const I18N = {
     helpBody: [
       "This site was made to make it easy to browse the Kemoket booth list.\nAI was used for automatic translation and development, so there may be errors in the content.\nFor more details, please refer to {link}",
       "All data is stored only on your device,\nand may be lost if you clear your browser's site data.",
+      "Once you've visited the site while online, you can keep browsing it even if you lose connection later\n(new profile photos or updated info just won't load while offline).",
       "The search box filters circles in the current tab by booth name\nor circle name (in the All tab, it searches everything).",
       "In the Notes (📝) tab, you can see the circles you've noted,\nand filter them by Plan to Visit or Visited status.\nYou can export the notes, visit statuses, and budgets you've entered so far to a file,\nor restore them by importing that file.",
       "On the floor map, booths marked Plan to Visit are shown in yellow,\nand booths marked Visited are shown in green.",
@@ -953,6 +1087,15 @@ const I18N = {
     filterPlanned: "🟡 Plan to Visit",
     filterVisited: "🟢 Visited",
     budgetTotal: "Total budget: {amount}",
+    infoBtn: "🎪 Event Info",
+    infoHint: "Venue map · Transit · Weather",
+    infoTransitTitle: "🚃 Getting There",
+    infoMapTitle: "🗺️ Venue Map",
+    infoOpenMap: "Open larger map",
+    infoWeatherTitle: "☀️ Weather on Event Day",
+    infoWeatherLoading: "Loading weather...",
+    infoWeatherUnavailable: "The forecast for {date} isn't available yet (it appears roughly 2 weeks before the event).",
+    infoWeatherError: "Failed to load weather data.",
     memoLabel: "My Notes",
     memoPlaceholder: "e.g. one doujinshi, one acrylic keychain",
     save: "Save",
@@ -976,6 +1119,7 @@ const I18N = {
     helpBody: [
       "このサイトは、けもケットのブース一覧を簡単に見られるように作られたサイトです。\n自動翻訳および開発にAIを使用しているため、内容に誤りがある場合があります。\n詳細は {link} をご参照ください。",
       "すべての内容は端末にのみ保存され、\n端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
+      "一度オンラインでサイトにアクセスしておけば、その後オフラインになってもサイトの閲覧を続けられます\n（オフライン中は新しいプロフィール写真や最新情報は反映されません）。",
       "検索欄では現在のタブにいるサークルをブース名、\nサークル名で絞り込めます（全体タブでは全体検索）。",
       "メモ（📝）タブでは自分がメモしたサークルを確認でき、\n訪問予定または訪問済みの状態で絞り込むことができます。\nこれまで書いたメモ・訪問予定/済みの状態・予算をファイルにエクスポートしたり、\nそのファイルから復元（インポート）したりできます。",
       "配置図では、訪問予定のブースは黄色、\n訪問済みのブースは緑色で表示されます。",
@@ -1005,6 +1149,15 @@ const I18N = {
     filterPlanned: "🟡 訪問予定",
     filterVisited: "🟢 訪問済み",
     budgetTotal: "総予算：{amount}",
+    infoBtn: "🎪 イベント案内",
+    infoHint: "会場地図・交通アクセス・天気",
+    infoTransitTitle: "🚃 アクセス",
+    infoMapTitle: "🗺️ 会場地図",
+    infoOpenMap: "地図を大きく見る",
+    infoWeatherTitle: "☀️ 当日の天気",
+    infoWeatherLoading: "天気情報を読み込み中...",
+    infoWeatherUnavailable: "{date}の天気予報はまだ提供されていません（開催の約2週間前から表示されます）。",
+    infoWeatherError: "天気情報を読み込めませんでした。",
     memoLabel: "マイメモ",
     memoPlaceholder: "例：同人誌1冊、アクリルキーホルダー1個",
     save: "保存",
@@ -1353,7 +1506,7 @@ function renderNav(){
   allBtn.className = "memo-tab-btn";
   allBtn.textContent = t("allBtn");
   if(currentRow === "ALL") allBtn.classList.add("active");
-  allBtn.addEventListener("click", () => { currentRow = "ALL"; renderNav(); renderGrid(); });
+  allBtn.addEventListener("click", () => goToRow("ALL"));
   nav.appendChild(allBtn);
 
   ALL_ROWS.forEach(r => {
@@ -1361,7 +1514,7 @@ function renderNav(){
     btn.textContent = r;
     if(byRow[r].length === 0) btn.classList.add("empty");
     if(r === currentRow) btn.classList.add("active");
-    btn.addEventListener("click", () => { currentRow = r; renderNav(); renderGrid(); });
+    btn.addEventListener("click", () => goToRow(r));
     nav.appendChild(btn);
   });
 
@@ -1370,22 +1523,29 @@ function renderNav(){
   noteBtn.className = "memo-tab-btn";
   noteBtn.textContent = noteCount ? t("notesBtnCount", { n: noteCount }) : t("notesBtn");
   if(currentRow === "NOTES") noteBtn.classList.add("active");
-  noteBtn.addEventListener("click", () => { currentRow = "NOTES"; renderNav(); renderGrid(); });
+  noteBtn.addEventListener("click", () => goToRow("NOTES"));
   nav.appendChild(noteBtn);
 
   const mapBtn1 = document.createElement("button");
   mapBtn1.className = "memo-tab-btn";
   mapBtn1.textContent = t("mapBtn1");
   if(currentRow === "MAP1") mapBtn1.classList.add("active");
-  mapBtn1.addEventListener("click", () => { currentRow = "MAP1"; renderNav(); renderGrid(); });
+  mapBtn1.addEventListener("click", () => goToRow("MAP1"));
   nav.appendChild(mapBtn1);
 
   const mapBtn2 = document.createElement("button");
   mapBtn2.className = "memo-tab-btn";
   mapBtn2.textContent = t("mapBtn2");
   if(currentRow === "MAP2") mapBtn2.classList.add("active");
-  mapBtn2.addEventListener("click", () => { currentRow = "MAP2"; renderNav(); renderGrid(); });
+  mapBtn2.addEventListener("click", () => goToRow("MAP2"));
   nav.appendChild(mapBtn2);
+
+  const infoBtn = document.createElement("button");
+  infoBtn.className = "memo-tab-btn";
+  infoBtn.textContent = t("infoBtn");
+  if(currentRow === "INFO") infoBtn.classList.add("active");
+  infoBtn.addEventListener("click", () => goToRow("INFO"));
+  nav.appendChild(infoBtn);
 }
 
 function makePopover(booth){
@@ -1592,12 +1752,23 @@ function escapeHtml(s){
 function renderGrid(){
   const grid = document.getElementById("grid");
   const mapGrid = document.getElementById("mapGrid");
+  const infoView = document.getElementById("infoView");
   const emptyState = document.getElementById("emptyState");
 
   const isMapView = currentRow === "MAP1" || currentRow === "MAP2";
-  grid.style.display = isMapView ? "none" : "";
+  const isInfoView = currentRow === "INFO";
+  grid.style.display = (isMapView || isInfoView) ? "none" : "";
   mapGrid.style.display = isMapView ? "flex" : "none";
+  infoView.style.display = isInfoView ? "block" : "none";
   emptyState.style.display = "none";
+
+  if(isInfoView){
+    document.getElementById("currentLetter").textContent = "🎪";
+    document.getElementById("currentCount").textContent = t("infoHint");
+    document.getElementById("notesExtra").style.display = "none";
+    renderInfoView();
+    return;
+  }
 
   if(isMapView){
     document.getElementById("currentLetter").textContent = "🗺️";
@@ -1867,6 +2038,114 @@ function renderMapView(page){
   if(!mapGrid.querySelector(".map-col")){
     mapGrid.innerHTML = `<div class="empty-state" style="display:block;">${escapeHtml(t("noBoothData"))}</div>`;
   }
+}
+
+/* ---------- 행사 안내 (약도 · 교통편 · 날씨) ----------
+   날씨는 Open-Meteo(API 키 불필요)에서 행사 당일 예보를 그때그때 받아와 표시함.
+   예보는 대략 행사 2주 전부터 제공되므로, 그 전에는 안내 문구만 보여줌.
+------------------------------------------------- */
+const EVENT_DATE = "2026-09-20";
+const VENUE_LAT = 35.5808129;
+const VENUE_LON = 139.7481420;
+const VENUE_NAME = "東京流通センター(TRC)";
+const VENUE_ADDRESS = "東京都大田区平和島6-1-1";
+
+const TRANSIT_ROUTES = [
+  { mode: "🚝", from: { ko: "도쿄 모노레일 「流通センター」역", en: "Tokyo Monorail \"Ryutsu Center\" Sta.", jp: "東京モノレール「流通センター」駅" }, time: { ko: "도보 1분 (역 바로 앞)", en: "1 min walk (right by the station)", jp: "徒歩1分（駅前）" } },
+  { mode: "🚝", from: { ko: "하마마쓰초역에서 모노레일", en: "Monorail from Hamamatsucho Sta.", jp: "浜松町駅からモノレール" }, time: { ko: "약 10분", en: "approx. 10 min", jp: "約10分" } },
+  { mode: "🚝", from: { ko: "하네다공항에서 모노레일", en: "Monorail from Haneda Airport", jp: "羽田空港からモノレール" }, time: { ko: "약 5~11분", en: "approx. 5–11 min", jp: "約5〜11分" } },
+  { mode: "🚌", from: { ko: "오모리역(JR)에서 버스", en: "Bus from Omori Sta. (JR)", jp: "大森駅（JR）からバス" }, time: { ko: "약 12분", en: "approx. 12 min", jp: "約12分" } },
+  { mode: "🚌", from: { ko: "헤이와지마역(케이큐)에서 버스", en: "Bus from Heiwajima Sta. (Keikyu)", jp: "平和島駅（京急）からバス" }, time: { ko: "약 4분", en: "approx. 4 min", jp: "約4分" } },
+];
+
+function weatherIcon(code){
+  if(code === 0) return "☀️";
+  if(code === 1) return "🌤️";
+  if(code === 2) return "⛅";
+  if(code === 3) return "☁️";
+  if(code === 45 || code === 48) return "🌫️";
+  if([51,53,55,56,57].includes(code)) return "🌦️";
+  if([61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
+  if([71,73,75,77,85,86].includes(code)) return "🌨️";
+  if([95,96,99].includes(code)) return "⛈️";
+  return "🌡️";
+}
+
+let weatherCache = null;
+function fetchEventWeather(){
+  if(weatherCache) return weatherCache;
+  weatherCache = fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${VENUE_LAT}&longitude=${VENUE_LON}` +
+    `&hourly=temperature_2m,relative_humidity_2m,weathercode&timezone=Asia%2FTokyo` +
+    `&start_date=${EVENT_DATE}&end_date=${EVENT_DATE}`
+  ).then((res) => {
+    if(!res.ok) throw new Error("weather fetch failed");
+    return res.json();
+  });
+  return weatherCache;
+}
+
+function renderInfoView(){
+  const el = document.getElementById("infoView");
+  el.innerHTML = `
+    <section class="info-section">
+      <h2>${escapeHtml(t("infoTransitTitle"))}</h2>
+      <div class="venue-name">${escapeHtml(VENUE_NAME)}</div>
+      <div class="venue-address">${escapeHtml(VENUE_ADDRESS)}</div>
+      <table class="transit-table">
+        ${TRANSIT_ROUTES.map(r => `
+          <tr>
+            <td class="mode">${r.mode}</td>
+            <td>${escapeHtml(r.from[currentLang] || r.from.ko)}</td>
+            <td class="time">${escapeHtml(r.time[currentLang] || r.time.ko)}</td>
+          </tr>
+        `).join("")}
+      </table>
+    </section>
+
+    <section class="info-section">
+      <h2>${escapeHtml(t("infoMapTitle"))}</h2>
+      <div class="info-map-wrap">
+        <iframe src="https://www.google.com/maps?q=${encodeURIComponent(VENUE_NAME)}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <a class="info-map-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_NAME)}" target="_blank" rel="noopener">${escapeHtml(t("infoOpenMap"))}</a>
+    </section>
+
+    <section class="info-section">
+      <h2>${escapeHtml(t("infoWeatherTitle"))}</h2>
+      <div class="weather-cards" id="weatherCards">${escapeHtml(t("infoWeatherLoading"))}</div>
+    </section>
+  `;
+
+  const weatherCards = document.getElementById("weatherCards");
+  fetchEventWeather().then((data) => {
+    const times = (data && data.hourly && data.hourly.time) || [];
+    const temps = (data && data.hourly && data.hourly.temperature_2m) || [];
+    const hums = (data && data.hourly && data.hourly.relative_humidity_2m) || [];
+    const codes = (data && data.hourly && data.hourly.weathercode) || [];
+
+    const cards = [9, 12, 15].map((hour) => {
+      const idx = times.indexOf(`${EVENT_DATE}T${String(hour).padStart(2, "0")}:00`);
+      if(idx === -1) return null;
+      return { hour, temp: temps[idx], hum: hums[idx], code: codes[idx] };
+    }).filter(Boolean);
+
+    if(!cards.length){
+      weatherCards.innerHTML = `<div class="weather-empty">${escapeHtml(t("infoWeatherUnavailable", { date: EVENT_DATE }))}</div>`;
+      return;
+    }
+
+    weatherCards.innerHTML = cards.map((c) => `
+      <div class="weather-card">
+        <div class="weather-time">${String(c.hour).padStart(2, "0")}:00</div>
+        <div class="weather-icon">${weatherIcon(c.code)}</div>
+        <div class="weather-temp">${Math.round(c.temp)}°C</div>
+        <div class="weather-hum">💧 ${Math.round(c.hum)}%</div>
+      </div>
+    `).join("");
+  }).catch(() => {
+    weatherCards.innerHTML = `<div class="weather-empty">${escapeHtml(t("infoWeatherError"))}</div>`;
+  });
 }
 
 /* ---------- 부스 상세 모달 (배치도에서 부스를 눌렀을 때) ---------- */
