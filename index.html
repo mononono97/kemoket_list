@@ -271,6 +271,25 @@
     font-size:13px;
     color:#5a5646;
   }
+  .sort-priority-btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--card-bg);
+    color:var(--ink);
+    padding:5px 10px;
+    border-radius:4px;
+    font-size:11.5px;
+    font-weight:600;
+    cursor:pointer;
+    margin-left:auto;
+    transition:background .15s, border-color .15s;
+  }
+  .sort-priority-btn:hover{background:#efece0;}
+  .sort-priority-btn.active{
+    background:var(--panel);
+    border-color:var(--panel);
+    color:var(--paper);
+  }
   .notes-extra{
     display:flex;
     align-items:center;
@@ -423,6 +442,11 @@
     box-shadow:0 0 0 1px #3f7a33 inset;
     background:#e3f3df;
   }
+
+  /* 우선순위 표시 (배경색과 겹치지 않도록 카드 테두리 outline으로 표시) */
+  .booth.priority-1{ outline:3px solid #d64545; outline-offset:2px; }
+  .booth.priority-2{ outline:3px solid #8b5fbf; outline-offset:2px; }
+  .booth.priority-3{ outline:3px solid #3b82c4; outline-offset:2px; }
 
   /* 팝오버 안의 메모 입력 영역 */
   .memo-box{
@@ -581,6 +605,40 @@
     color:#eafce6;
   }
 
+  /* 우선순위 선택 버튼 */
+  .priority-box{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .priority-box button{
+    flex:1;
+    font-size:11.5px;
+    font-weight:600;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.08);
+    color:var(--paper);
+    cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .priority-box button.p1.active{
+    background:#d64545;
+    border-color:#d64545;
+    color:#fff;
+  }
+  .priority-box button.p2.active{
+    background:#8b5fbf;
+    border-color:#8b5fbf;
+    color:#fff;
+  }
+  .priority-box button.p3.active{
+    background:#3b82c4;
+    border-color:#3b82c4;
+    color:#fff;
+  }
+
   /* 부스별 예산 입력 */
   .budget-box{
     margin-top:10px;
@@ -716,6 +774,9 @@
     color:#eafce6;
     font-weight:700;
   }
+  .map-cell.priority-1{ outline:2px solid #d64545; outline-offset:1px; }
+  .map-cell.priority-2{ outline:2px solid #8b5fbf; outline-offset:1px; }
+  .map-cell.priority-3{ outline:2px solid #3b82c4; outline-offset:1px; }
   .map-legend{
     display:flex;
     align-items:center;
@@ -926,6 +987,7 @@
   <div class="row-heading">
     <div class="big-letter" id="currentLetter">A</div>
     <div class="count" id="currentCount"></div>
+    <button type="button" class="sort-priority-btn" id="sortPriorityBtn" style="display:none;"></button>
   </div>
   <div class="notes-extra" id="notesExtra" style="display:none;">
     <div class="visit-filter" id="visitFilter">
@@ -981,6 +1043,17 @@ let currentQuery = "";
 let widgetsLoaded = false;
 let notesVisitFilter = "all"; // "all" | "planned" | "visited" — 메모 탭에서 방문 상태로 필터링
 
+// 부스 목록을 우선순위(1→2→3→없음) 순으로 정렬할지 여부 (새로고침해도 유지)
+const SORT_PRIORITY_KEY = "kemoket-sort-priority";
+let sortByPriority = false;
+try { sortByPriority = localStorage.getItem(SORT_PRIORITY_KEY) === "1"; } catch {}
+
+function toggleSortByPriority(){
+  sortByPriority = !sortByPriority;
+  try { localStorage.setItem(SORT_PRIORITY_KEY, sortByPriority ? "1" : "0"); } catch {}
+  renderGrid();
+}
+
 /* ---------- 다국어(i18n) ----------
    서클명/대표자명은 원본 그대로 두고, 그 외 UI 텍스트만 언어별로 관리함.
 ------------------------------------ */
@@ -997,8 +1070,9 @@ const I18N = {
       "모든 내용은 단말에만 저장되며,\n단말의 브라우저 데이터를 지울 시 작성한 내용이 소실 될 수 있습니다",
       "온라인 상태로 한 번 접속해두면, 이후 인터넷이 끊겨도 사이트를 계속 열람할 수 있습니다\n(단, 오프라인 중에는 새로운 프로필 사진이나 최신 정보는 반영되지 않습니다)",
       "검색창에서는 현재 탭에 위치한 작가를 부스 이름,\n작가 이름으로 필터링 가능합니다(전체 탭에서는 전체 검색)",
-      "메모(📝) 탭에서 내가 메모해둔 작가들을 확인 가능하며,\n방문 예정 혹은 방문 완료 기준으로 필터링 할 수 있습니다.\n지금까지 작성한 메모, 방문 예정/완료 상태, 예산을 파일로 내보내거나,\n내보낸 파일로 복원(가져오기)할 수 있습니다.",
+      "메모(📝) 탭에서 내가 메모해둔 작가들을 확인 가능하며,\n방문 예정 혹은 방문 완료 기준으로 필터링 할 수 있습니다.\n지금까지 작성한 메모, 방문 예정/완료 상태, 예산, 우선순위를 파일로 내보내거나,\n내보낸 파일로 복원(가져오기)할 수 있습니다.",
       "배치도에서는 방문 예정인 부스는 노란색,\n방문 완료한 부스는 초록색으로 표시됩니다.",
+      "부스별로 1~3순위를 정할 수 있으며, 순위에 따라 카드/배치도 테두리 색이\n빨강(1순위)·보라(2순위)·파랑(3순위)으로 구분되어 표시됩니다.",
       "언어는 한국어, 영어, 일본어가 지원됩니다.",
       "인터넷 연결이 좋지 않을 시, 작가의 프로필 사진이 보이지 않을 수 있습니다.",
       "제작 : @Chung_Hwani",
@@ -1020,6 +1094,11 @@ const I18N = {
     openProfile: "X 프로필 열기",
     visitPlanned: "🟡 방문 예정",
     visitVisited: "🟢 방문 완료",
+    priorityLabel: "우선순위",
+    priority1: "1순위",
+    priority2: "2순위",
+    priority3: "3순위",
+    sortPriorityBtn: "🔺 우선순위순 정렬",
     budgetLabel: "예산 (엔)",
     filterAll: "전체",
     filterPlanned: "🟡 방문 예정",
@@ -1043,7 +1122,7 @@ const I18N = {
     exportNotesBtn: "⬇️ 데이터 내보내기",
     importNotesBtn: "⬆️ 데이터 가져오기",
     importConfirm: "가져오기를 하면 기존 메모/방문 상태/예산과 병합됩니다. 계속할까요?",
-    importSuccess: "메모 {n}개, 방문 상태 {v}개, 예산 {b}개를 가져왔습니다.",
+    importSuccess: "메모 {n}개, 방문 상태 {v}개, 예산 {b}개, 우선순위 {p}개를 가져왔습니다.",
     importFail: "파일을 불러오지 못했습니다. 파일 형식을 확인해주세요.",
     exportEmpty: "내보낼 데이터가 없습니다.",
   },
@@ -1059,8 +1138,9 @@ const I18N = {
       "All data is stored only on your device,\nand may be lost if you clear your browser's site data.",
       "Once you've visited the site while online, you can keep browsing it even if you lose connection later\n(new profile photos or updated info just won't load while offline).",
       "The search box filters circles in the current tab by booth name\nor circle name (in the All tab, it searches everything).",
-      "In the Notes (📝) tab, you can see the circles you've noted,\nand filter them by Plan to Visit or Visited status.\nYou can export the notes, visit statuses, and budgets you've entered so far to a file,\nor restore them by importing that file.",
+      "In the Notes (📝) tab, you can see the circles you've noted,\nand filter them by Plan to Visit or Visited status.\nYou can export the notes, visit statuses, budgets, and priorities you've entered so far to a file,\nor restore them by importing that file.",
       "On the floor map, booths marked Plan to Visit are shown in yellow,\nand booths marked Visited are shown in green.",
+      "You can set a priority (1–3) for each booth; the card/map border color shows it as\nred (priority 1), purple (priority 2), or blue (priority 3).",
       "Korean, English, and Japanese are supported.",
       "If your internet connection is poor, artist profile photos may not display.",
       "Made by: @Chung_Hwani",
@@ -1082,6 +1162,11 @@ const I18N = {
     openProfile: "Open X Profile",
     visitPlanned: "🟡 Plan to Visit",
     visitVisited: "🟢 Visited",
+    priorityLabel: "Priority",
+    priority1: "Priority 1",
+    priority2: "Priority 2",
+    priority3: "Priority 3",
+    sortPriorityBtn: "🔺 Sort by Priority",
     budgetLabel: "Budget (JPY)",
     filterAll: "All",
     filterPlanned: "🟡 Plan to Visit",
@@ -1105,7 +1190,7 @@ const I18N = {
     exportNotesBtn: "⬇️ Export Data",
     importNotesBtn: "⬆️ Import Data",
     importConfirm: "Importing will merge with your existing notes/visit status/budget. Continue?",
-    importSuccess: "Imported {n} notes, {v} visit statuses, {b} budgets.",
+    importSuccess: "Imported {n} notes, {v} visit statuses, {b} budgets, {p} priorities.",
     importFail: "Failed to import the file. Please check the file format.",
     exportEmpty: "There is no data to export.",
   },
@@ -1121,8 +1206,9 @@ const I18N = {
       "すべての内容は端末にのみ保存され、\n端末のブラウザデータを削除すると、書き込んだ内容が失われる可能性があります。",
       "一度オンラインでサイトにアクセスしておけば、その後オフラインになってもサイトの閲覧を続けられます\n（オフライン中は新しいプロフィール写真や最新情報は反映されません）。",
       "検索欄では現在のタブにいるサークルをブース名、\nサークル名で絞り込めます（全体タブでは全体検索）。",
-      "メモ（📝）タブでは自分がメモしたサークルを確認でき、\n訪問予定または訪問済みの状態で絞り込むことができます。\nこれまで書いたメモ・訪問予定/済みの状態・予算をファイルにエクスポートしたり、\nそのファイルから復元（インポート）したりできます。",
+      "メモ（📝）タブでは自分がメモしたサークルを確認でき、\n訪問予定または訪問済みの状態で絞り込むことができます。\nこれまで書いたメモ・訪問予定/済みの状態・予算・優先度をファイルにエクスポートしたり、\nそのファイルから復元（インポート）したりできます。",
       "配置図では、訪問予定のブースは黄色、\n訪問済みのブースは緑色で表示されます。",
+      "ブースごとに優先度（1〜3）を設定でき、カード・配置図の枠線の色で\n赤（優先度1）・紫（優先度2）・青（優先度3）として表示されます。",
       "言語は韓国語・英語・日本語に対応しています。",
       "インターネット接続が不安定な場合、作家のプロフィール写真が表示されないことがあります。",
       "制作：@Chung_Hwani",
@@ -1144,6 +1230,11 @@ const I18N = {
     openProfile: "Xプロフィールを開く",
     visitPlanned: "🟡 訪問予定",
     visitVisited: "🟢 訪問済み",
+    priorityLabel: "優先度",
+    priority1: "優先度1",
+    priority2: "優先度2",
+    priority3: "優先度3",
+    sortPriorityBtn: "🔺 優先度順に並び替え",
     budgetLabel: "予算（円）",
     filterAll: "すべて",
     filterPlanned: "🟡 訪問予定",
@@ -1167,7 +1258,7 @@ const I18N = {
     exportNotesBtn: "⬇️ データをエクスポート",
     importNotesBtn: "⬆️ データをインポート",
     importConfirm: "インポートすると既存のメモ・訪問状態・予算と統合されます。続行しますか？",
-    importSuccess: "メモ{n}件、訪問状態{v}件、予算{b}件をインポートしました。",
+    importSuccess: "メモ{n}件、訪問状態{v}件、予算{b}件、優先度{p}件をインポートしました。",
     importFail: "ファイルを読み込めませんでした。ファイル形式をご確認ください。",
     exportEmpty: "エクスポートするデータがありません。",
   },
@@ -1196,6 +1287,7 @@ function applyStaticTexts(){
   document.querySelector('#visitFilter button[data-filter="all"]').textContent = t("filterAll");
   document.querySelector('#visitFilter button[data-filter="planned"]').textContent = t("filterPlanned");
   document.querySelector('#visitFilter button[data-filter="visited"]').textContent = t("filterVisited");
+  document.getElementById("sortPriorityBtn").textContent = t("sortPriorityBtn");
   updateBudgetTotalDisplay();
   document.getElementById("siteFooter").innerHTML =
     `${t("footerSource")}: <a href="https://skypalette.jp/kemoket/list.html" style="color:inherit;" target="_blank" rel="noopener">skypalette.jp/kemoket</a>`;
@@ -1353,6 +1445,52 @@ function updateVisitVisuals(boothId){
   });
 }
 
+/* ---------- 부스별 우선순위 ----------
+   { "A-01": 1|2|3, ... } 형태로 브라우저(localStorage)에만 저장됨. 1이 가장 높은 우선순위.
+   방문 예정/완료·메모 표시(배경색)와 겹치지 않도록 카드 테두리(outline)로 별도 표시함.
+------------------------------------------------ */
+const PRIORITY_KEY = "kemoket-priority";
+
+function loadPriority(){
+  try {
+    return JSON.parse(localStorage.getItem(PRIORITY_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function savePriority(){
+  try {
+    localStorage.setItem(PRIORITY_KEY, JSON.stringify(priority));
+  } catch {
+    // 저장 실패(용량 초과 등)해도 사이트 동작에는 지장 없도록 무시
+  }
+}
+
+let priority = loadPriority();
+
+function getPriority(boothId){
+  return priority[boothId] || null;
+}
+
+function setPriority(boothId, level){
+  if(level){
+    priority[boothId] = level;
+  } else {
+    delete priority[boothId];
+  }
+  savePriority();
+}
+
+function updatePriorityVisuals(boothId){
+  const level = getPriority(boothId);
+  document.querySelectorAll(`[data-booth-id="${boothId}"]`).forEach(el => {
+    el.classList.toggle("priority-1", level === 1);
+    el.classList.toggle("priority-2", level === 2);
+    el.classList.toggle("priority-3", level === 3);
+  });
+}
+
 /* ---------- 부스별 예산 ----------
    { "A-01": 3000, ... } 형태로 브라우저(localStorage)에만 저장됨. 단위는 엔.
 ------------------------------------------------ */
@@ -1407,7 +1545,7 @@ function updateBudgetTotalDisplay(){
    { "A-01": "메모 내용", ... } 형태의 notes 객체를 JSON 파일로 저장/복원함.
 ------------------------------------------------- */
 function exportNotes(){
-  if(!Object.keys(notes).length && !Object.keys(visitStatus).length && !Object.keys(budgets).length){
+  if(!Object.keys(notes).length && !Object.keys(visitStatus).length && !Object.keys(budgets).length && !Object.keys(priority).length){
     alert(t("exportEmpty"));
     return;
   }
@@ -1417,6 +1555,7 @@ function exportNotes(){
     notes,
     visitStatus,
     budgets,
+    priority,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1436,17 +1575,18 @@ function importNotesFromFile(file){
     try {
       const parsed = JSON.parse(reader.result);
       const isWrapped = !!(parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        && (parsed.notes || parsed.visitStatus || parsed.budgets));
+        && (parsed.notes || parsed.visitStatus || parsed.budgets || parsed.priority));
       // 예전 형식(메모만 담긴 파일) 호환: 감싸져 있지 않으면 전체를 메모 객체로 취급
       const incomingNotes = isWrapped ? (parsed.notes || {}) : parsed;
       const incomingVisit = isWrapped ? (parsed.visitStatus || {}) : {};
       const incomingBudgets = isWrapped ? (parsed.budgets || {}) : {};
+      const incomingPriority = isWrapped ? (parsed.priority || {}) : {};
       if(!incomingNotes || typeof incomingNotes !== "object" || Array.isArray(incomingNotes)){
         throw new Error("invalid format");
       }
       if(!confirm(t("importConfirm"))) return;
 
-      let noteCount = 0, visitCount = 0, budgetCount = 0;
+      let noteCount = 0, visitCount = 0, budgetCount = 0, priorityCount = 0;
       Object.keys(incomingNotes).forEach(id => {
         if(typeof incomingNotes[id] === "string" && incomingNotes[id].trim()){
           notes[id] = incomingNotes[id].trim().slice(0, MAX_NOTE_LENGTH);
@@ -1466,13 +1606,21 @@ function importNotesFromFile(file){
           budgetCount++;
         }
       });
+      Object.keys(incomingPriority).forEach(id => {
+        const lvl = Number(incomingPriority[id]);
+        if(lvl === 1 || lvl === 2 || lvl === 3){
+          priority[id] = lvl;
+          priorityCount++;
+        }
+      });
 
       saveNotes();
       saveVisitStatus();
       saveBudgets();
+      savePriority();
       renderNav();
       renderGrid();
-      alert(t("importSuccess", { n: noteCount, v: visitCount, b: budgetCount }));
+      alert(t("importSuccess", { n: noteCount, v: visitCount, b: budgetCount, p: priorityCount }));
     } catch {
       alert(t("importFail"));
     }
@@ -1620,6 +1768,34 @@ function makePopover(booth){
   });
   pop.appendChild(visitBox);
 
+  const priorityBox = document.createElement("div");
+  priorityBox.className = "priority-box";
+  priorityBox.innerHTML = `
+    <button type="button" class="p1">${escapeHtml(t("priority1"))}</button>
+    <button type="button" class="p2">${escapeHtml(t("priority2"))}</button>
+    <button type="button" class="p3">${escapeHtml(t("priority3"))}</button>
+  `;
+  const p1Btn = priorityBox.querySelector(".p1");
+  const p2Btn = priorityBox.querySelector(".p2");
+  const p3Btn = priorityBox.querySelector(".p3");
+  const syncPriorityButtons = () => {
+    const level = getPriority(booth.id);
+    p1Btn.classList.toggle("active", level === 1);
+    p2Btn.classList.toggle("active", level === 2);
+    p3Btn.classList.toggle("active", level === 3);
+  };
+  syncPriorityButtons();
+
+  priorityBox.addEventListener("click", (e) => e.stopPropagation());
+  [[p1Btn, 1], [p2Btn, 2], [p3Btn, 3]].forEach(([btn, level]) => {
+    btn.addEventListener("click", () => {
+      setPriority(booth.id, getPriority(booth.id) === level ? null : level);
+      updatePriorityVisuals(booth.id);
+      syncPriorityButtons();
+    });
+  });
+  pop.appendChild(priorityBox);
+
   const budgetBox = document.createElement("div");
   budgetBox.className = "budget-box";
   budgetBox.innerHTML = `
@@ -1766,6 +1942,7 @@ function renderGrid(){
     document.getElementById("currentLetter").textContent = "🎪";
     document.getElementById("currentCount").textContent = t("infoHint");
     document.getElementById("notesExtra").style.display = "none";
+    document.getElementById("sortPriorityBtn").style.display = "none";
     renderInfoView();
     return;
   }
@@ -1776,11 +1953,14 @@ function renderGrid(){
       ? `展示室A・B — ${t("mapHint")}`
       : `展示室C・D — ${t("mapHint")}`;
     document.getElementById("notesExtra").style.display = "none";
+    document.getElementById("sortPriorityBtn").style.display = "none";
     renderMapView(currentRow);
     return;
   }
 
   grid.innerHTML = "";
+  document.getElementById("sortPriorityBtn").style.display = "";
+  document.getElementById("sortPriorityBtn").classList.toggle("active", sortByPriority);
 
   const isNotesView = currentRow === "NOTES";
   const isAllView = currentRow === "ALL";
@@ -1794,6 +1974,7 @@ function renderGrid(){
       ...Object.keys(notes),
       ...Object.keys(visitStatus),
       ...Object.keys(budgets),
+      ...Object.keys(priority),
     ]);
     list = BOOTHS.filter(b => trackedIds.has(b.id));
     if(notesVisitFilter !== "all"){
@@ -1818,6 +1999,11 @@ function renderGrid(){
     );
   }
 
+  if(sortByPriority){
+    // Array#sort는 안정 정렬이라, 같은 우선순위(혹은 둘 다 없음)끼리는 원래 순서가 유지됨
+    list = list.slice().sort((a, b) => (getPriority(a.id) || 4) - (getPriority(b.id) || 4));
+  }
+
   document.getElementById("currentCount").textContent = isNotesView
     ? t("notesCount", { n: list.length })
     : t("circleCount", { n: list.length });
@@ -1830,7 +2016,8 @@ function renderGrid(){
     const card = document.createElement("div");
     const visitCls = getVisitStatus(booth.id) === "planned" ? " visit-planned"
       : getVisitStatus(booth.id) === "visited" ? " visit-visited" : "";
-    card.className = "booth" + (booth.twitter ? "" : " no-tw") + (getNote(booth.id) ? " has-note" : "") + visitCls;
+    const priorityCls = getPriority(booth.id) ? ` priority-${getPriority(booth.id)}` : "";
+    card.className = "booth" + (booth.twitter ? "" : " no-tw") + (getNote(booth.id) ? " has-note" : "") + visitCls + priorityCls;
     card.dataset.boothId = booth.id;
 
     const memoFlag = document.createElement("div");
@@ -1989,7 +2176,8 @@ function buildPairedColumn(list){
     const cell = document.createElement("div");
     const visitCls = getVisitStatus(booth.id) === "planned" ? " visit-planned"
       : getVisitStatus(booth.id) === "visited" ? " visit-visited" : "";
-    cell.className = "map-cell" + (getNote(booth.id) ? " has-note" : "") + visitCls;
+    const priorityCls = getPriority(booth.id) ? ` priority-${getPriority(booth.id)}` : "";
+    cell.className = "map-cell" + (getNote(booth.id) ? " has-note" : "") + visitCls + priorityCls;
     cell.dataset.boothId = booth.id;
     cell.textContent = num;
     cell.title = `${booth.id} ${booth.name}`;
@@ -2235,6 +2423,36 @@ function openBoothModal(boothId){
   });
   content.appendChild(visitBox);
 
+  const priorityBox = document.createElement("div");
+  priorityBox.className = "priority-box";
+  priorityBox.innerHTML = `
+    <button type="button" class="p1">${escapeHtml(t("priority1"))}</button>
+    <button type="button" class="p2">${escapeHtml(t("priority2"))}</button>
+    <button type="button" class="p3">${escapeHtml(t("priority3"))}</button>
+  `;
+  const p1Btn = priorityBox.querySelector(".p1");
+  const p2Btn = priorityBox.querySelector(".p2");
+  const p3Btn = priorityBox.querySelector(".p3");
+  const syncPriorityButtons = () => {
+    const level = getPriority(booth.id);
+    p1Btn.classList.toggle("active", level === 1);
+    p2Btn.classList.toggle("active", level === 2);
+    p3Btn.classList.toggle("active", level === 3);
+  };
+  syncPriorityButtons();
+  const refreshPriorityViews = () => {
+    updatePriorityVisuals(booth.id);
+    if(currentRow === "MAP1" || currentRow === "MAP2") renderMapView(currentRow);
+  };
+  [[p1Btn, 1], [p2Btn, 2], [p3Btn, 3]].forEach(([btn, level]) => {
+    btn.addEventListener("click", () => {
+      setPriority(booth.id, getPriority(booth.id) === level ? null : level);
+      refreshPriorityViews();
+      syncPriorityButtons();
+    });
+  });
+  content.appendChild(priorityBox);
+
   const budgetBox = document.createElement("div");
   budgetBox.className = "budget-box";
   budgetBox.innerHTML = `
@@ -2346,6 +2564,8 @@ document.getElementById("visitFilter").addEventListener("click", (e) => {
   notesVisitFilter = btn.dataset.filter;
   renderGrid();
 });
+
+document.getElementById("sortPriorityBtn").addEventListener("click", toggleSortByPriority);
 
 function closeModal(){
   document.getElementById("modalBackdrop").classList.remove("open");
